@@ -1,10 +1,129 @@
-.container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+.questions {
+  padding: 12px;
+  padding-bottom: 80px;
 }
-.title {
-  font-size: 18px;
+
+.filters {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.filters picker {
+  margin-right: 12px;
+  font-size: 14px;
+  color: #333;
+}
+
+.filters input {
+  flex: 1;
+  font-size: 14px;
+  color: #666;
+}
+
+.list {
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.subject-tag {
+  font-size: 12px;
+  color: #1aad19;
+  background: #e8f5e9;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.status {
+  font-size: 12px;
   color: #999;
+}
+
+.card-text {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.tag {
+  font-size: 12px;
+  color: #1976d2;
+  background: #e3f2fd;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #999;
+}
+
+.card-foot text {
+  margin-right: 12px;
+}
+
+.card-foot checkbox {
+  margin-left: auto;
+}
+
+.bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+  border-top: 1px solid #f0f0f0;
+}
+
+.bar text {
+  font-size: 14px;
+  color: #333;
+}
+
+.bar button {
+  background: #1aad19;
+  color: #fff;
+  font-size: 14px;
+  border-radius: 6px;
+  padding: 8px 20px;
 }

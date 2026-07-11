@@ -1,3 +1,26 @@
-<view class="container">
-  <text class="title">错题详情</text>
+<view class="detail">
+  <image class="original" src="{{question.image_url}}" mode="widthFix" />
+  <view class="field">
+    <text class="label">科目:</text>
+    <picker range="{{subjects}}" value="{{subjectIndex}}" bindchange="onSubjectChange">
+      <text>{{subjects[subjectIndex]}}</text>
+    </picker>
+  </view>
+  <view class="field">
+    <text class="label">OCR 文字:</text>
+    <textarea value="{{question.ocr_text}}" bindinput="onTextInput" />
+  </view>
+  <view class="field">
+    <text class="label">标签:</text>
+    <view class="tags">
+      <text class="tag" wx:for="{{question.tags}}" wx:key="*this">#{{item}}</text>
+      <input placeholder="添加标签" bindconfirm="addTag" />
+    </view>
+  </view>
+  <view class="field">
+    <text class="label">难度: {{question.difficulty}}⭐</text>
+    <slider min="1" max="5" value="{{question.difficulty}}" bindchange="onDifficulty" />
+  </view>
+  <button bindtap="save">保存修改</button>
+  <button class="danger" bindtap="remove">删除</button>
 </view>

@@ -1,10 +1,96 @@
-.container {
+.capture {
+  padding: 16px;
+}
+
+.info-bar {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  padding: 12px 0;
+  background: #f0f9ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.camera-area {
+  background: #f5f5f5;
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  min-height: 200px;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  margin-bottom: 16px;
+  overflow: hidden;
 }
-.title {
-  font-size: 18px;
+
+.camera-area image {
+  width: 100%;
+}
+
+.placeholder {
   color: #999;
+  font-size: 16px;
+}
+
+.upload-list {
+  margin-bottom: 16px;
+}
+
+.upload-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.upload-item text {
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.status-pending {
+  color: #f60;
+  background: #fff3e0;
+}
+
+.status-processing {
+  color: #1976d2;
+  background: #e3f2fd;
+}
+
+.status-confirmed {
+  color: #388e3c;
+  background: #e8f5e9;
+}
+
+.subject-tag {
+  color: #1aad19;
+  font-size: 13px;
+  padding: 2px 8px;
+  border: 1px solid #1aad19;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.submit-btn {
+  background: #1aad19;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 16px;
+  padding: 12px;
+  width: 100%;
+}
+
+.submit-btn[disabled] {
+  background: #ccc;
 }

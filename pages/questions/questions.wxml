@@ -1,3 +1,31 @@
-<view class="container">
-  <text class="title">错题库</text>
+<view class="questions">
+  <view class="filters">
+    <picker range="{{subjects}}" bindchange="onFilter">
+      <text>{{subjects[filterIndex]}}</text>
+    </picker>
+    <input placeholder="搜索标签" bindconfirm="onSearch" />
+  </view>
+
+  <view class="list">
+    <view class="card" wx:for="{{questions}}" wx:key="id" bindtap="onDetail" data-id="{{item.id}}">
+      <view class="card-head">
+        <text class="subject-tag">{{subjectMap[item.subject] || item.subject}}</text>
+        <text class="status">{{item.status}}</text>
+      </view>
+      <text class="card-text">{{item.ocr_text || '待识别...'}}</text>
+      <view class="card-tags">
+        <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t">#{{t}}</text>
+      </view>
+      <view class="card-foot">
+        <text>错:{{item.wrong_count}}次</text>
+        <text>{{item.difficulty ? '⭐'.repeat(item.difficulty) : '?'}}</text>
+        <checkbox checked="{{item.selected}}" data-id="{{item.id}}" bindtap="onSelect" />
+      </view>
+    </view>
+  </view>
+
+  <view class="bar" wx:if="{{selectedCount > 0}}">
+    <text>已选 {{selectedCount}} 道</text>
+    <button bindtap="goToSheet">生成错题集</button>
+  </view>
 </view>
