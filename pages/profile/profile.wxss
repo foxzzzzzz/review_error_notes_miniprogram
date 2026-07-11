@@ -1,0 +1,54 @@
+.profile {
+  padding: 0 16px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 0;
+  background: #fff;
+  border-radius: 12px;
+  margin: 16px 0;
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin-bottom: 12px;
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.phone {
+  font-size: 14px;
+  color: #999;
+}
+
+.section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+.row {
+  padding: 12px 0;
+  font-size: 16px;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.row:last-child {
+  border-bottom: none;
+}

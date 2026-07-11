@@ -1,0 +1,10 @@
+{
+  "appid": "your-appid-here",
+  "projectname": "wrong-book",
+  "miniprogramRoot": "./",
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true
+  }
+}

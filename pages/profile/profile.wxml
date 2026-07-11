@@ -1,0 +1,30 @@
+<view class="profile">
+  <view class="header">
+    <image class="avatar" src="{{avatarUrl || '/icons/default-avatar.png'}}" />
+    <text class="name">{{nickname || '未设置昵称'}}</text>
+    <text class="phone">{{phoneMasked || '未绑定手机'}}</text>
+  </view>
+
+  <view class="section">
+    <view class="section-title">默认设置</view>
+    <picker mode="selector" range="{{grades}}" value="{{gradeIndex}}" bindchange="onGradeChange">
+      <view class="row">当前年级: {{grades[gradeIndex]}}</view>
+    </picker>
+    <picker mode="selector" range="{{semesters}}" value="{{semester}}" bindchange="onSemesterChange">
+      <view class="row">当前册别: {{semesters[semester]}}</view>
+    </picker>
+  </view>
+
+  <view class="section">
+    <view class="section-title">统计</view>
+    <view class="row">总错题: {{stats.total}} 道</view>
+    <view class="row">本月新增: {{stats.monthNew}} 道</view>
+    <view class="row">已掌握: {{stats.mastered}} 道</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">设置</view>
+    <button open-type="getPhoneNumber" bindgetphonenumber="onGetPhone" wx:if="{{!phoneBound}}">绑定手机号</button>
+    <view class="row" bindtap="onLogout">退出登录</view>
+  </view>
+</view>

@@ -1,0 +1,24 @@
+{
+  "pages": [
+    "pages/capture/capture",
+    "pages/questions/questions",
+    "pages/question-detail/detail",
+    "pages/sheet/sheet",
+    "pages/profile/profile"
+  ],
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#1aad19",
+    "list": [
+      {"pagePath": "pages/capture/capture", "text": "拍照录入", "iconPath": "icons/camera.png", "selectedIconPath": "icons/camera-active.png"},
+      {"pagePath": "pages/questions/questions", "text": "错题库", "iconPath": "icons/book.png", "selectedIconPath": "icons/book-active.png"},
+      {"pagePath": "pages/sheet/sheet", "text": "出卷", "iconPath": "icons/edit.png", "selectedIconPath": "icons/edit-active.png"},
+      {"pagePath": "pages/profile/profile", "text": "我的", "iconPath": "icons/me.png", "selectedIconPath": "icons/me-active.png"}
+    ]
+  },
+  "window": {
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "错题本",
+    "navigationBarTextStyle": "black"
+  }
+}
