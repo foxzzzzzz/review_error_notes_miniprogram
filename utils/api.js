@@ -15,6 +15,7 @@ const request = (url, options = {}) => {
         if (res.statusCode === 401) {
           wx.removeStorageSync('token');
           wx.reLaunch({ url: '/pages/profile/profile' });
+          reject(new Error('Unauthorized'));
           return;
         }
         resolve(res.data);
@@ -37,7 +38,13 @@ module.exports = {
       fail: reject,
     });
   }),
-  listQuestions: (params = {}) => request('/questions?' + new URLSearchParams(params).toString()),
+  listQuestions: (params = {}) => {
+    const qs = Object.keys(params)
+      .filter(k => params[k] != null)
+      .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
+      .join('&');
+    return request('/questions' + (qs ? '?' + qs : ''));
+  },
   updateQuestion: (id, data) => request(`/questions/${id}`, { method: 'PATCH', data }),
   createSheet: (data) => request('/sheets', { method: 'POST', data }),
   listSheets: () => request('/sheets'),

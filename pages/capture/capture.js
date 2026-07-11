@@ -50,14 +50,22 @@ Page({
   },
   submitAll() {
     this.setData({ uploading: true });
-    const promises = this.data.uploads
-      .filter(u => u.status === 'pending')
-      .map((u, i) => {
-        this.setData({ [`uploads[${i}].status`]: 'processing' });
-        return api.uploadImage(u.path).then(result => {
-          this.setData({ [`uploads[${i}].status`]: 'confirmed', [`uploads[${i}].imageId`]: result.image_id });
-        });
-      });
+    const uploads = this.data.uploads;
+    const promises = [];
+    for (let i = 0; i < uploads.length; i++) {
+      if (uploads[i].status === 'pending') {
+        const idx = i;  // capture original index
+        this.setData({ [`uploads[${idx}].status`]: 'processing' });
+        promises.push(
+          api.uploadImage(uploads[idx].path).then(result => {
+            this.setData({
+              [`uploads[${idx}].status`]: 'confirmed',
+              [`uploads[${idx}].imageId`]: result.image_id,
+            });
+          })
+        );
+      }
+    }
     Promise.all(promises).then(() => {
       wx.showToast({ title: '提交成功', icon: 'success' });
       this.setData({ uploading: false });
