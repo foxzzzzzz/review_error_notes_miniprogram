@@ -1,10 +1,14 @@
-.container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-.title {
-  font-size: 18px;
-  color: #999;
-}
+.sheet-page { padding: 15px; }
+.config { background: #fff; border-radius: 8px; padding: 15px; }
+.title-row { display: flex; justify-content: space-between; padding: 10px 0; }
+.title-row .link { color: #1aad19; }
+.field { margin: 15px 0; }
+.field .label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; }
+.field radio-group { display: flex; gap: 15px; }
+.primary { background: #1aad19; color: #fff; margin-top: 15px; }
+.result { background: #fff; border-radius: 8px; padding: 20px; text-align: center; margin-top: 15px; }
+.result .success { font-size: 18px; display: block; margin-bottom: 15px; }
+.result button { margin: 8px 0; }
+.history { margin-top: 20px; }
+.section-title { font-size: 14px; color: #999; padding: 10px 0; }
+.history-item { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; }

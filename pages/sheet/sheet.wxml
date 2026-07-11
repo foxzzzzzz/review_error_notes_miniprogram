@@ -1,3 +1,47 @@
-<view class="container">
-  <text class="title">出卷</text>
+<view class="sheet-page">
+  <view class="config" wx:if="{{!generating}}">
+    <view class="title-row">
+      <text>已选: {{selectedIds.length}} 道错题</text>
+      <text class="link" bindtap="viewSelected">查看</text>
+    </view>
+
+    <view class="field">
+      <text class="label">卷子标题</text>
+      <input value="{{title}}" bindinput="onTitleInput" placeholder="输入标题" />
+    </view>
+
+    <view class="field">
+      <text class="label">每题衍生题数</text>
+      <radio-group bindchange="onDerivedCount">
+        <label><radio value="1" checked />1道</label>
+        <label><radio value="2" />2道</label>
+        <label><radio value="3" />3道</label>
+      </radio-group>
+    </view>
+
+    <view class="field">
+      <text class="label">难度递进</text>
+      <radio-group bindchange="onDifficulty">
+        <label><radio value="1" />+1</label>
+        <label><radio value="2" checked />+2</label>
+        <label><radio value="3" />+3</label>
+      </radio-group>
+    </view>
+
+    <button class="primary" bindtap="generate" disabled="{{selectedIds.length === 0}}">生成错题集</button>
+  </view>
+
+  <view class="result" wx:if="{{pdfUrl}}">
+    <text class="success">✅ 生成完成</text>
+    <button bindtap="preview">预览 PDF</button>
+    <button bindtap="share">分享/发送到电脑</button>
+  </view>
+
+  <view class="history">
+    <view class="section-title">历史错题集</view>
+    <view class="history-item" wx:for="{{sheets}}" wx:key="id" bindtap="openSheet" data-url="{{item.pdf_url}}">
+      <text>📝 {{item.title || '错题集'}}</text>
+      <text>{{item.created_at}}</text>
+    </view>
+  </view>
 </view>
