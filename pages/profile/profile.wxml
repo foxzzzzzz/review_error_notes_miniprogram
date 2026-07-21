@@ -1,6 +1,6 @@
 <view class="profile">
   <view class="header">
-    <image class="avatar" src="{{avatarUrl || '/icons/default-avatar.png'}}" />
+    <view class="avatar">{{nickname ? nickname[0] : '学'}}</view>
     <text class="name">{{nickname || '未设置昵称'}}</text>
     <text class="phone">{{phoneMasked || '未绑定手机'}}</text>
   </view>
