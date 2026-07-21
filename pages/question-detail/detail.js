@@ -2,9 +2,12 @@ const api = require('../../utils/api');
 Page({
   data: { question: {}, subjects: ['数学','语文','英语'], subjectIndex: 0 },
   onLoad(options) {
-    api.listQuestions().then(data => {
-      const q = data.find(q => q.id === options.id) || {};
-      this.setData({ question: q, subjectIndex: ['math','chinese','english'].indexOf(q.subject) });
+    api.getQuestion(options.id).then(q => {
+      const subjectIndex = ['math','chinese','english'].indexOf(q.subject);
+      this.setData({
+        question: { ...q, image_url: api.resolveServerUrl(q.image_url) },
+        subjectIndex: subjectIndex < 0 ? 0 : subjectIndex,
+      });
     });
   },
   save() { api.updateQuestion(this.data.question.id, this.data.question).then(() => wx.navigateBack()); },

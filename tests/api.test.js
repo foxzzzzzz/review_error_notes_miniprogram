@@ -65,3 +65,29 @@ test('capture page does not submit an empty optional subject', () => {
 
   assert.equal(source.includes("subject: uploads[idx].subject || ''"), false);
 });
+
+
+test('question detail method requests one question by id', async () => {
+  let call;
+  const api = loadApi({
+    request(options) {
+      call = options;
+      options.success({ statusCode: 200, data: { id: 'question-7' } });
+    },
+  });
+
+  const result = await api.getQuestion('question-7');
+
+  assert.equal(call.url.endsWith('/questions/question-7'), true);
+  assert.equal(call.method, 'GET');
+  assert.equal(result.id, 'question-7');
+});
+
+
+test('server URL resolver expands relative file paths', () => {
+  const api = loadApi();
+
+  assert.equal(api.resolveServerUrl('/uploads/a.jpg'), 'https://your-server.com/uploads/a.jpg');
+  assert.equal(api.resolveServerUrl('https://cdn.example/a.jpg'), 'https://cdn.example/a.jpg');
+  assert.equal(api.resolveServerUrl(''), '');
+});

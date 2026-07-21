@@ -1,4 +1,11 @@
-const BASE_URL = 'https://your-server.com/api';
+const SERVER_BASE = 'https://your-server.com';
+const BASE_URL = SERVER_BASE + '/api';
+
+const resolveServerUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return SERVER_BASE + path;
+};
 
 const request = (url, options = {}) => {
   const token = wx.getStorageSync('token');
@@ -46,10 +53,12 @@ module.exports = {
       .join('&');
     return request('/questions' + (qs ? '?' + qs : ''));
   },
+  getQuestion: (id) => request(`/questions/${id}`),
   updateQuestion: (id, data) => request(`/questions/${id}`, { method: 'PATCH', data }),
   createSheet: (data) => request('/sheets', { method: 'POST', data }),
   listSheets: () => request('/sheets'),
   deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
   getProfile: () => request('/profile'),
   updateProfile: (data) => request('/profile', { method: 'PATCH', data }),
+  resolveServerUrl,
 };

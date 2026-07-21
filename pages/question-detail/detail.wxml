@@ -1,5 +1,5 @@
 <view class="detail">
-  <image class="original" src="{{question.image_url}}" mode="widthFix" />
+  <image wx:if="{{question.image_url}}" class="original" src="{{question.image_url}}" mode="widthFix" />
   <view class="field">
     <text class="label">科目:</text>
     <picker range="{{subjects}}" value="{{subjectIndex}}" bindchange="onSubjectChange">
