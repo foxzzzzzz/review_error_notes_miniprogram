@@ -21,7 +21,9 @@ Page({
 
   onShow() {
     this.setData({ selectedIds: wx.getStorageSync('selectedIds') || [] });
-    api.listSheets().then(data => this.setData({ sheets: data }));
+    api.listSheets()
+      .then(data => this.setData({ sheets: data }))
+      .catch(() => wx.showToast({ title: '历史记录加载失败', icon: 'none' }));
   },
 
   generate() {

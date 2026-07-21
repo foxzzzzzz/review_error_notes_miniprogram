@@ -37,26 +37,28 @@ Page({
         phoneMasked: profile.phone_masked || '',
         nickname: profile.nickname || '',
       });
-    }).catch(() => {});
+    }).catch(() => wx.showToast({ title: '资料加载失败', icon: 'none' }));
   },
   onGradeChange(e) {
     const idx = parseInt(e.detail.value);
     wx.setStorageSync('grade', idx);
     this.setData({ gradeIndex: idx });
-    api.updateProfile({ grade: idx + 1 }).catch(() => {});
+    api.updateProfile({ grade: idx + 1 })
+      .catch(() => wx.showToast({ title: '年级保存失败', icon: 'none' }));
   },
   onSemesterChange(e) {
     const idx = parseInt(e.detail.value);
     wx.setStorageSync('semester', idx);
     this.setData({ semester: idx });
-    api.updateProfile({ semester: idx + 1 }).catch(() => {});
+    api.updateProfile({ semester: idx + 1 })
+      .catch(() => wx.showToast({ title: '册别保存失败', icon: 'none' }));
   },
   onGetPhone(e) {
     if (e.detail.code) {
       api.bindPhone(e.detail.code).then(() => {
         wx.setStorageSync('phoneBound', true);
         this.setData({ phoneBound: true, phoneMasked: '****' });
-      });
+      }).catch(() => wx.showToast({ title: '手机号绑定失败', icon: 'none' }));
     }
   },
   onLogout() {

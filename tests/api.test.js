@@ -119,3 +119,69 @@ test('profile page reads code from the phone authorization event', () => {
   assert.equal(source.includes('e.detail.code'), true);
   assert.equal(source.includes('e.detail.encryptedData'), false);
 });
+
+
+for (const statusCode of [400, 500]) {
+  test(`request rejects HTTP ${statusCode} with an ApiError`, async () => {
+    const api = loadApi({
+      request(options) {
+        options.success({ statusCode, data: { detail: 'request failed' } });
+      },
+    });
+
+    await assert.rejects(api.listSheets(), error => {
+      assert.equal(error.name, 'ApiError');
+      assert.equal(error.statusCode, statusCode);
+      assert.equal(error.message, 'request failed');
+      return true;
+    });
+  });
+}
+
+
+test('request rejects 401 and clears the stored login', async () => {
+  const removed = [];
+  let relaunched = false;
+  const api = loadApi({
+    removeStorageSync(key) { removed.push(key); },
+    reLaunch() { relaunched = true; },
+    request(options) {
+      options.success({ statusCode: 401, data: { detail: 'expired' } });
+    },
+  });
+
+  await assert.rejects(api.listSheets(), error => error.statusCode === 401);
+  assert.deepEqual(removed, ['token', 'studentId']);
+  assert.equal(relaunched, true);
+});
+
+
+test('upload rejects non-2xx responses', async () => {
+  const api = loadApi({
+    uploadFile(options) {
+      options.success({ statusCode: 422, data: '{"detail":"invalid upload"}' });
+    },
+  });
+
+  await assert.rejects(api.uploadImage('/tmp/a.jpg'), error => {
+    assert.equal(error.name, 'ApiError');
+    assert.equal(error.statusCode, 422);
+    assert.equal(error.message, 'invalid upload');
+    return true;
+  });
+});
+
+
+test('upload rejects malformed JSON as an ApiError', async () => {
+  const api = loadApi({
+    uploadFile(options) {
+      options.success({ statusCode: 200, data: 'not-json' });
+    },
+  });
+
+  await assert.rejects(api.uploadImage('/tmp/a.jpg'), error => {
+    assert.equal(error.name, 'ApiError');
+    assert.equal(error.message, '服务器返回了无效数据');
+    return true;
+  });
+});

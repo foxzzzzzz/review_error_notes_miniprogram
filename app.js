@@ -18,8 +18,9 @@ App({
           if (data.need_phone) {
             wx.navigateTo({ url: '/pages/profile/profile?action=bindPhone' });
           }
-        });
-      }
+        }).catch(() => wx.showToast({ title: '登录失败', icon: 'none' }));
+      },
+      fail: () => wx.showToast({ title: '登录失败', icon: 'none' }),
     });
   }
 });

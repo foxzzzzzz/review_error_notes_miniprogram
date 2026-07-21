@@ -7,6 +7,26 @@ const resolveServerUrl = (path) => {
   return SERVER_BASE + path;
 };
 
+class ApiError extends Error {
+  constructor(message, statusCode = 0, data = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.data = data;
+  }
+}
+
+const errorMessage = (data, statusCode) => {
+  if (data && typeof data === 'object' && data.detail) return data.detail;
+  return `请求失败 (${statusCode})`;
+};
+
+const handleUnauthorized = () => {
+  wx.removeStorageSync('token');
+  wx.removeStorageSync('studentId');
+  wx.reLaunch({ url: '/pages/profile/profile' });
+};
+
 const request = (url, options = {}) => {
   const token = wx.getStorageSync('token');
   return new Promise((resolve, reject) => {
@@ -19,13 +39,14 @@ const request = (url, options = {}) => {
         'Authorization': token ? `Bearer ${token}` : '',
       },
       success(res) {
-        if (res.statusCode === 401) {
-          wx.removeStorageSync('token');
-          wx.reLaunch({ url: '/pages/profile/profile' });
-          reject(new Error('Unauthorized'));
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(res.data);
           return;
         }
-        resolve(res.data);
+        if (res.statusCode === 401) {
+          handleUnauthorized();
+        }
+        reject(new ApiError(errorMessage(res.data, res.statusCode), res.statusCode, res.data));
       },
       fail: reject,
     });
@@ -42,7 +63,21 @@ module.exports = {
       name: 'file',
       formData: metadata,
       header: { 'Authorization': `Bearer ${wx.getStorageSync('token')}` },
-      success(res) { resolve(JSON.parse(res.data)); },
+      success(res) {
+        let data;
+        try {
+          data = JSON.parse(res.data);
+        } catch (_error) {
+          reject(new ApiError('服务器返回了无效数据', res.statusCode));
+          return;
+        }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data);
+          return;
+        }
+        if (res.statusCode === 401) handleUnauthorized();
+        reject(new ApiError(errorMessage(data, res.statusCode), res.statusCode, data));
+      },
       fail: reject,
     });
   }),
@@ -61,4 +96,5 @@ module.exports = {
   getProfile: () => request('/profile'),
   updateProfile: (data) => request('/profile', { method: 'PATCH', data }),
   resolveServerUrl,
+  ApiError,
 };

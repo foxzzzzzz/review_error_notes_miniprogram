@@ -10,7 +10,7 @@ Page({
     uploads: [],
     uploading: false,
     subjectMap: { math: '数学', chinese: '语文', english: '英语' },
-    statusText: { pending: '待处理', processing: '识别中', confirmed: '完成' },
+    statusText: { pending: '待处理', processing: '识别中', confirmed: '完成', failed: '失败' },
   },
   onShow() {
     this.setData({
@@ -53,7 +53,7 @@ Page({
     const uploads = this.data.uploads;
     const promises = [];
     for (let i = 0; i < uploads.length; i++) {
-      if (uploads[i].status === 'pending') {
+      if (uploads[i].status === 'pending' || uploads[i].status === 'failed') {
         const idx = i;  // capture original index
         const metadata = {
           grade: this.data.gradeIndex + 1,
@@ -67,6 +67,9 @@ Page({
               [`uploads[${idx}].status`]: 'confirmed',
               [`uploads[${idx}].imageId`]: result.image_id,
             });
+          }).catch(error => {
+            this.setData({ [`uploads[${idx}].status`]: 'failed' });
+            throw error;
           })
         );
       }
@@ -74,6 +77,9 @@ Page({
     Promise.all(promises).then(() => {
       wx.showToast({ title: '提交成功', icon: 'success' });
       this.setData({ uploading: false });
+    }).catch(() => {
+      this.setData({ uploading: false });
+      wx.showToast({ title: '部分图片上传失败', icon: 'none' });
     });
   },
 });

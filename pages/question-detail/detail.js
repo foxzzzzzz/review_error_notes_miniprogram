@@ -8,12 +8,20 @@ Page({
         question: { ...q, image_url: api.resolveServerUrl(q.image_url) },
         subjectIndex: subjectIndex < 0 ? 0 : subjectIndex,
       });
-    });
+    }).catch(() => wx.showToast({ title: '加载失败', icon: 'none' }));
   },
-  save() { api.updateQuestion(this.data.question.id, this.data.question).then(() => wx.navigateBack()); },
+  save() {
+    api.updateQuestion(this.data.question.id, this.data.question)
+      .then(() => wx.navigateBack())
+      .catch(() => wx.showToast({ title: '保存失败', icon: 'none' }));
+  },
   remove() {
     wx.showModal({ title: '确认删除', success: (r) => {
-      if (r.confirm) api.deleteQuestion(this.data.question.id).then(() => wx.navigateBack());
+      if (r.confirm) {
+        api.deleteQuestion(this.data.question.id)
+          .then(() => wx.navigateBack())
+          .catch(() => wx.showToast({ title: '删除失败', icon: 'none' }));
+      }
     }});
   },
   onTextInput(e) { this.setData({ 'question.ocr_text': e.detail.value }); },

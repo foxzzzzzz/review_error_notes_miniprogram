@@ -13,18 +13,20 @@ Page({
     api.listQuestions().then(data => {
       const questions = data.map(q => ({...q, selected: false}));
       this.setData({ questions, selectedIds: [], selectedCount: 0 });
-    });
+    }).catch(() => this.showError());
   },
   onFilter(e) {
     const idx = parseInt(e.detail.value);
     this.setData({ filterIndex: idx });
     const subjectMap = {0: null, 1: 'math', 2: 'chinese', 3: 'english'};
     api.listQuestions({ subject: subjectMap[idx] }).then(data =>
-      this.setData({ questions: data.map(q => ({...q, selected: false})), selectedIds: [], selectedCount: 0 }));
+      this.setData({ questions: data.map(q => ({...q, selected: false})), selectedIds: [], selectedCount: 0 }))
+      .catch(() => this.showError());
   },
   onSearch(e) {
     api.listQuestions({ tag: e.detail.value }).then(data =>
-      this.setData({ questions: data.map(q => ({...q, selected: false})), selectedIds: [], selectedCount: 0 }));
+      this.setData({ questions: data.map(q => ({...q, selected: false})), selectedIds: [], selectedCount: 0 }))
+      .catch(() => this.showError());
   },
   onDetail(e) {
     wx.navigateTo({ url: `/pages/question-detail/detail?id=${e.currentTarget.dataset.id}` });
@@ -38,5 +40,8 @@ Page({
   goToSheet() {
     wx.setStorageSync('selectedIds', this.data.selectedIds);
     wx.switchTab({ url: '/pages/sheet/sheet' });
+  },
+  showError() {
+    wx.showToast({ title: '加载失败', icon: 'none' });
   },
 });
