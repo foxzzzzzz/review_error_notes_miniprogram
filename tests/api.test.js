@@ -91,3 +91,31 @@ test('server URL resolver expands relative file paths', () => {
   assert.equal(api.resolveServerUrl('https://cdn.example/a.jpg'), 'https://cdn.example/a.jpg');
   assert.equal(api.resolveServerUrl(''), '');
 });
+
+
+test('phone binding submits the one-time WeChat code', async () => {
+  let call;
+  const api = loadApi({
+    request(options) {
+      call = options;
+      options.success({ statusCode: 200, data: { ok: true } });
+    },
+  });
+
+  await api.bindPhone('phone-code');
+
+  assert.equal(call.url.endsWith('/auth/bind-phone'), true);
+  assert.equal(call.method, 'POST');
+  assert.deepEqual(call.data, { code: 'phone-code' });
+});
+
+
+test('profile page reads code from the phone authorization event', () => {
+  const source = fs.readFileSync(
+    path.resolve(__dirname, '..', 'pages', 'profile', 'profile.js'),
+    'utf8'
+  );
+
+  assert.equal(source.includes('e.detail.code'), true);
+  assert.equal(source.includes('e.detail.encryptedData'), false);
+});

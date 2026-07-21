@@ -52,8 +52,8 @@ Page({
     api.updateProfile({ semester: idx + 1 }).catch(() => {});
   },
   onGetPhone(e) {
-    if (e.detail.encryptedData) {
-      api.bindPhone(e.detail.encryptedData, e.detail.iv).then(() => {
+    if (e.detail.code) {
+      api.bindPhone(e.detail.code).then(() => {
         wx.setStorageSync('phoneBound', true);
         this.setData({ phoneBound: true, phoneMasked: '****' });
       });

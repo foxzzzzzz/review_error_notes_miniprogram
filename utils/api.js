@@ -34,7 +34,7 @@ const request = (url, options = {}) => {
 
 module.exports = {
   login: (code) => request('/auth/login', { method: 'POST', data: { code } }),
-  bindPhone: (encryptedData, iv) => request('/auth/bind-phone', { method: 'POST', data: { encrypted_data: encryptedData, iv } }),
+  bindPhone: (code) => request('/auth/bind-phone', { method: 'POST', data: { code } }),
   uploadImage: (filePath, metadata = {}) => new Promise((resolve, reject) => {
     wx.uploadFile({
       url: BASE_URL + '/upload/image',
