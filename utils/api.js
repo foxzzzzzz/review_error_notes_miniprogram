@@ -28,11 +28,12 @@ const request = (url, options = {}) => {
 module.exports = {
   login: (code) => request('/auth/login', { method: 'POST', data: { code } }),
   bindPhone: (encryptedData, iv) => request('/auth/bind-phone', { method: 'POST', data: { encrypted_data: encryptedData, iv } }),
-  uploadImage: (filePath) => new Promise((resolve, reject) => {
+  uploadImage: (filePath, metadata = {}) => new Promise((resolve, reject) => {
     wx.uploadFile({
       url: BASE_URL + '/upload/image',
       filePath,
       name: 'file',
+      formData: metadata,
       header: { 'Authorization': `Bearer ${wx.getStorageSync('token')}` },
       success(res) { resolve(JSON.parse(res.data)); },
       fail: reject,
@@ -49,4 +50,6 @@ module.exports = {
   createSheet: (data) => request('/sheets', { method: 'POST', data }),
   listSheets: () => request('/sheets'),
   deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
+  getProfile: () => request('/profile'),
+  updateProfile: (data) => request('/profile', { method: 'PATCH', data }),
 };

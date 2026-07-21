@@ -55,9 +55,14 @@ Page({
     for (let i = 0; i < uploads.length; i++) {
       if (uploads[i].status === 'pending') {
         const idx = i;  // capture original index
+        const metadata = {
+          grade: this.data.gradeIndex + 1,
+          semester: this.data.semester + 1,
+        };
+        if (uploads[idx].subject) metadata.subject = uploads[idx].subject;
         this.setData({ [`uploads[${idx}].status`]: 'processing' });
         promises.push(
-          api.uploadImage(uploads[idx].path).then(result => {
+          api.uploadImage(uploads[idx].path, metadata).then(result => {
             this.setData({
               [`uploads[${idx}].status`]: 'confirmed',
               [`uploads[${idx}].imageId`]: result.image_id,
