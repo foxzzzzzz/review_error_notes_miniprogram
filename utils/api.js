@@ -55,6 +55,7 @@ const request = (url, options = {}) => {
 
 module.exports = {
   login: (code) => request('/auth/login', { method: 'POST', data: { code } }),
+  devLogin: (code) => request('/auth/dev-login', { method: 'POST', data: { code } }),
   bindPhone: (code) => request('/auth/bind-phone', { method: 'POST', data: { code } }),
   uploadImage: (filePath, metadata = {}) => new Promise((resolve, reject) => {
     wx.uploadFile({
