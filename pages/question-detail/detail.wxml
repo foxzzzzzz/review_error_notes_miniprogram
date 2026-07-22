@@ -7,8 +7,29 @@
     </picker>
   </view>
   <view class="field">
-    <text class="label">OCR 文字:</text>
+    <text class="label">识别文字:</text>
     <textarea value="{{question.ocr_text}}" bindinput="onTextInput" />
+  </view>
+  <view class="field review-context" wx:if="{{reviewInfo}}">
+    <text class="label">模型复核参考:</text>
+    <view class="review-row" wx:if="{{reviewInfo.normalizedText}}">
+      <text class="review-name">规范内容</text>
+      <text>{{reviewInfo.normalizedText}}</text>
+    </view>
+    <view class="review-row" wx:if="{{reviewInfo.answer}}">
+      <text class="review-name">建议答案</text>
+      <text>{{reviewInfo.answer}}</text>
+    </view>
+    <view class="review-row">
+      <text class="review-name">置信度</text>
+      <text>{{reviewInfo.confidenceText}}</text>
+    </view>
+    <view class="review-row" wx:if="{{reviewInfo.uncertainSegments.length}}">
+      <text class="review-name">不确定片段</text>
+      <view class="uncertain-list">
+        <text class="uncertain" wx:for="{{reviewInfo.uncertainSegments}}" wx:key="index">{{item}}</text>
+      </view>
+    </view>
   </view>
   <view class="field">
     <text class="label">标签:</text>

@@ -1,9 +1,17 @@
 const api = require('../../utils/api');
 
+const statusMap = {
+  pending: '待处理',
+  needs_review: '待确认',
+  confirmed: '已确认',
+  mastered: '已掌握',
+};
+
 const prepareQuestions = data => data.map(q => ({
   ...q,
   selected: false,
   difficultyStars: q.difficulty ? '⭐'.repeat(q.difficulty) : '?',
+  statusText: statusMap[q.status] || q.status,
 }));
 
 Page({

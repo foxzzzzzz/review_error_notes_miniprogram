@@ -10,7 +10,7 @@
     <view class="card" wx:for="{{questions}}" wx:key="id" bindtap="onDetail" data-id="{{item.id}}">
       <view class="card-head">
         <text class="subject-tag">{{subjectMap[item.subject] || item.subject}}</text>
-        <text class="status">{{item.status}}</text>
+        <text class="status">{{item.statusText}}</text>
       </view>
       <text class="card-text">{{item.ocr_text || '待识别...'}}</text>
       <view class="card-tags">

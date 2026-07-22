@@ -36,6 +36,32 @@
   line-height: 1.6;
 }
 
+.review-context {
+  background: #fff8e1;
+}
+
+.review-row {
+  margin-top: 8px;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.review-name {
+  display: block;
+  color: #8d6e63;
+  font-size: 12px;
+}
+
+.uncertain {
+  display: inline-block;
+  margin: 4px 6px 0 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c62828;
+  background: #ffebee;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;

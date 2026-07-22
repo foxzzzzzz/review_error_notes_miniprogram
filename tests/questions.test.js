@@ -43,3 +43,46 @@ test('questions page prepares difficulty text for WXML rendering', async () => {
     delete require.cache[pagePath];
   }
 });
+
+test('questions page renders human-readable vision review status', async () => {
+  const api = require(apiPath);
+  const originalListQuestions = api.listQuestions;
+  let pageDefinition;
+
+  api.listQuestions = () => Promise.resolve([
+    { id: 'review', difficulty: 1, status: 'needs_review' },
+    { id: 'done', difficulty: 1, status: 'confirmed' },
+  ]);
+  global.Page = definition => { pageDefinition = definition; };
+  delete require.cache[pagePath];
+  require(pagePath);
+
+  const page = {
+    ...pageDefinition,
+    data: { ...pageDefinition.data },
+    setData(values) { Object.assign(this.data, values); },
+  };
+
+  try {
+    await page.load();
+    assert.equal(page.data.questions[0].statusText, '待确认');
+    assert.equal(page.data.questions[1].statusText, '已确认');
+
+    const listTemplate = fs.readFileSync(
+      path.join(root, 'pages', 'questions', 'questions.wxml'),
+      'utf8'
+    );
+    assert.match(listTemplate, /item\.statusText/);
+
+    const detailTemplate = fs.readFileSync(
+      path.join(root, 'pages', 'question-detail', 'detail.wxml'),
+      'utf8'
+    );
+    assert.match(detailTemplate, /识别文字/);
+    assert.doesNotMatch(detailTemplate, /OCR 文字/);
+  } finally {
+    api.listQuestions = originalListQuestions;
+    delete global.Page;
+    delete require.cache[pagePath];
+  }
+});

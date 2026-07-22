@@ -1,11 +1,21 @@
 const api = require('../../utils/api');
 Page({
-  data: { question: {}, subjects: ['数学','语文','英语'], subjectIndex: 0 },
+  data: { question: {}, reviewInfo: null, subjects: ['数学','语文','英语'], subjectIndex: 0 },
   onLoad(options) {
-    api.getQuestion(options.id).then(q => {
+    return api.getQuestion(options.id).then(q => {
       const subjectIndex = ['math','chinese','english'].indexOf(q.subject);
+      const raw = q.ocr_raw_json || {};
+      const confidenceText = typeof raw.confidence === 'number'
+        ? `${Math.round(raw.confidence * 100)}%`
+        : '未提供';
       this.setData({
         question: { ...q, image_url: api.resolveServerUrl(q.image_url) },
+        reviewInfo: {
+          normalizedText: raw.normalized_text || '',
+          answer: q.ocr_answer || raw.answer || '',
+          confidenceText,
+          uncertainSegments: raw.uncertain_segments || [],
+        },
         subjectIndex: subjectIndex < 0 ? 0 : subjectIndex,
       });
     }).catch(() => wx.showToast({ title: '加载失败', icon: 'none' }));
