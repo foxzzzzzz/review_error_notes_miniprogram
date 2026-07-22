@@ -16,11 +16,11 @@ Page({
   },
   loadProfile() {
     this.setData({
-      gradeIndex: wx.getStorageSync('grade') || 0,
-      semester: wx.getStorageSync('semester') || 0,
-      phoneBound: wx.getStorageSync('phoneBound') || false,
-      phoneMasked: wx.getStorageSync('phoneMasked') || '',
-      nickname: wx.getStorageSync('nickname') || '',
+      gradeIndex: wx.getStorageSync('grade') ?? 0,
+      semester: wx.getStorageSync('semester') ?? 0,
+      phoneBound: wx.getStorageSync('phoneBound') ?? false,
+      phoneMasked: wx.getStorageSync('phoneMasked') ?? '',
+      nickname: wx.getStorageSync('nickname') ?? '',
     });
     api.getProfile().then(profile => {
       const gradeIndex = profile.grade - 1;
