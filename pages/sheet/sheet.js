@@ -1,13 +1,5 @@
 const api = require('../../utils/api');
 
-const SERVER_BASE = 'https://your-server.com';
-
-function resolveUrl(path) {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  return SERVER_BASE + path;
-}
-
 Page({
   data: {
     selectedIds: [],
@@ -35,7 +27,7 @@ Page({
       derived_per_original: parseInt(this.data.derivedCount),
       difficulty_boost: parseInt(this.data.difficultyBoost),
     }).then(sheet => {
-      this.setData({ pdfUrl: resolveUrl(sheet.pdf_url), generating: false });
+      this.setData({ pdfUrl: api.resolveServerUrl(sheet.pdf_url), generating: false });
       wx.showToast({ title: '生成完成', icon: 'success' });
     }).catch(err => {
       this.setData({ generating: false });
@@ -62,7 +54,7 @@ Page({
   },
 
   openSheet(e) {
-    const url = resolveUrl(e.currentTarget.dataset.url);
+    const url = api.resolveServerUrl(e.currentTarget.dataset.url);
     wx.downloadFile({
       url,
       success: res => wx.openDocument({ filePath: res.tempFilePath, fileType: 'pdf' }),

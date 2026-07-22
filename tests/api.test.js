@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
 
-
+const { SERVER_BASE } = require('../utils/config');
 const apiPath = path.resolve(__dirname, '..', 'utils', 'api.js');
 
 function loadApi(wxOverrides = {}) {
@@ -87,7 +87,7 @@ test('question detail method requests one question by id', async () => {
 test('server URL resolver expands relative file paths', () => {
   const api = loadApi();
 
-  assert.equal(api.resolveServerUrl('/uploads/a.jpg'), 'https://your-server.com/uploads/a.jpg');
+  assert.equal(api.resolveServerUrl('/uploads/a.jpg'), SERVER_BASE + '/uploads/a.jpg');
   assert.equal(api.resolveServerUrl('https://cdn.example/a.jpg'), 'https://cdn.example/a.jpg');
   assert.equal(api.resolveServerUrl(''), '');
 });

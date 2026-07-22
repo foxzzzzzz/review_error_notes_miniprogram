@@ -1,4 +1,4 @@
-const SERVER_BASE = 'https://your-server.com';
+const { SERVER_BASE } = require('./config');
 const BASE_URL = SERVER_BASE + '/api';
 
 const resolveServerUrl = (path) => {
