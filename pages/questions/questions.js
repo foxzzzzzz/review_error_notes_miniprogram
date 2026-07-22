@@ -1,4 +1,11 @@
 const api = require('../../utils/api');
+
+const prepareQuestions = data => data.map(q => ({
+  ...q,
+  selected: false,
+  difficultyStars: q.difficulty ? '⭐'.repeat(q.difficulty) : '?',
+}));
+
 Page({
   data: {
     questions: [],
@@ -11,7 +18,7 @@ Page({
   onShow() { this.load(); },
   load() {
     api.listQuestions().then(data => {
-      const questions = data.map(q => ({...q, selected: false}));
+      const questions = prepareQuestions(data);
       this.setData({ questions, selectedIds: [], selectedCount: 0 });
     }).catch(() => this.showError());
   },
@@ -20,12 +27,12 @@ Page({
     this.setData({ filterIndex: idx });
     const subjectMap = {0: null, 1: 'math', 2: 'chinese', 3: 'english'};
     api.listQuestions({ subject: subjectMap[idx] }).then(data =>
-      this.setData({ questions: data.map(q => ({...q, selected: false})), selectedIds: [], selectedCount: 0 }))
+      this.setData({ questions: prepareQuestions(data), selectedIds: [], selectedCount: 0 }))
       .catch(() => this.showError());
   },
   onSearch(e) {
     api.listQuestions({ tag: e.detail.value }).then(data =>
-      this.setData({ questions: data.map(q => ({...q, selected: false})), selectedIds: [], selectedCount: 0 }))
+      this.setData({ questions: prepareQuestions(data), selectedIds: [], selectedCount: 0 }))
       .catch(() => this.showError());
   },
   onDetail(e) {

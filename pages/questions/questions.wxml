@@ -18,7 +18,7 @@
       </view>
       <view class="card-foot">
         <text>错:{{item.wrong_count}}次</text>
-        <text>{{item.difficulty ? '⭐'.repeat(item.difficulty) : '?'}}</text>
+        <text>{{item.difficultyStars}}</text>
         <checkbox checked="{{item.selected}}" data-id="{{item.id}}" catchtap="onSelect" />
       </view>
     </view>
