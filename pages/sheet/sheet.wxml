@@ -13,13 +13,14 @@
     <view class="field">
       <text class="label">每题衍生题数</text>
       <radio-group bindchange="onDerivedCount">
-        <label><radio value="1" checked />1道</label>
-        <label><radio value="2" />2道</label>
-        <label><radio value="3" />3道</label>
+        <label><radio value="0" checked="{{derivedCount === 0}}" />0道（仅原题）</label>
+        <label><radio value="1" checked="{{derivedCount === 1}}" />1道</label>
+        <label><radio value="2" checked="{{derivedCount === 2}}" />2道</label>
+        <label><radio value="3" checked="{{derivedCount === 3}}" />3道</label>
       </radio-group>
     </view>
 
-    <view class="field">
+    <view class="field" wx:if="{{derivedCount > 0}}">
       <text class="label">难度递进</text>
       <radio-group bindchange="onDifficulty">
         <label><radio value="1" />+1</label>

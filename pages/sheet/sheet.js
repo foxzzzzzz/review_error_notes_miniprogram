@@ -4,7 +4,7 @@ Page({
   data: {
     selectedIds: [],
     title: '',
-    derivedCount: 1,
+    derivedCount: 0,
     difficultyBoost: 2,
     generating: false,
     pdfUrl: '',
@@ -31,7 +31,11 @@ Page({
       wx.showToast({ title: '生成完成', icon: 'success' });
     }).catch(err => {
       this.setData({ generating: false });
-      wx.showToast({ title: '生成失败', icon: 'error' });
+      wx.showToast({
+        title: err && err.message ? err.message : '生成失败',
+        icon: 'none',
+        duration: 3000,
+      });
     });
   },
 
@@ -63,7 +67,7 @@ Page({
 
   onTitleInput(e) { this.setData({ title: e.detail.value }); },
 
-  onDerivedCount(e) { this.setData({ derivedCount: e.detail.value }); },
+  onDerivedCount(e) { this.setData({ derivedCount: parseInt(e.detail.value) }); },
 
   onDifficulty(e) { this.setData({ difficultyBoost: e.detail.value }); },
 });
