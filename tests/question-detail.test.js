@@ -14,6 +14,10 @@ const question = {
   difficulty: 3,
   ocr_text: 'qin tin',
   ocr_answer: 'qīng tíng',
+  crop_region: {
+    bbox: [0.1, 0.2, 0.4, 0.5],
+    localization_status: 'verified',
+  },
   ocr_raw_json: {
     normalized_text: 'qīng tíng',
     confidence: 0.764,
@@ -104,6 +108,36 @@ test('question detail prepares review context and loads the cropped image', asyn
     assert.equal(harness.page.data.cropImagePath, 'wxfile://crop.jpg');
     assert.equal(harness.page.data.imageLoading, false);
     assert.equal(harness.page.data.imageError, '');
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('question detail explains when an unverified region falls back to the original image', async () => {
+  const harness = createHarness();
+
+  try {
+    const api = require(apiPath);
+    api.getQuestion = () => Promise.resolve({
+      ...question,
+      crop_region: {
+        bbox_source: 'unverified',
+        localization_status: 'needs_review',
+        index: 0,
+      },
+    });
+
+    await harness.page.onLoad({ id: 'review-question' });
+
+    assert.equal(
+      harness.page.data.localizationNotice,
+      '题目区域定位不确定，已展示完整原图'
+    );
+    const template = fs.readFileSync(
+      path.join(root, 'pages', 'question-detail', 'detail.wxml'),
+      'utf8'
+    );
+    assert.match(template, /localizationNotice/);
   } finally {
     harness.cleanup();
   }

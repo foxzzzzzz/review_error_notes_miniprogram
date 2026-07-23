@@ -18,6 +18,9 @@
     <text wx:if="{{cropImagePath}}" class="image-hint">
       {{imageLoading ? '正在打开原图...' : '点击查看整张原图'}}
     </text>
+    <text wx:if="{{localizationNotice}}" class="localization-notice">
+      {{localizationNotice}}
+    </text>
   </view>
   <view class="field">
     <text class="label">科目:</text>

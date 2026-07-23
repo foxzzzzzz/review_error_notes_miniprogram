@@ -16,6 +16,7 @@ Page({
     originalImagePath: '',
     imageLoading: false,
     imageError: '',
+    localizationNotice: '',
     difficultyLabel: '很简单',
     difficultyOptions: [
       { value: 1, label: '很简单' },
@@ -45,6 +46,10 @@ Page({
         },
         subjectIndex: subjectIndex < 0 ? 0 : subjectIndex,
         difficultyLabel: this.data.difficultyOptions[difficulty - 1].label,
+        localizationNotice: q.crop_region
+          && q.crop_region.localization_status === 'needs_review'
+          ? '题目区域定位不确定，已展示完整原图'
+          : '',
       });
       return this.loadCropImage();
     }).catch(() => wx.showToast({ title: '加载失败', icon: 'none' }));

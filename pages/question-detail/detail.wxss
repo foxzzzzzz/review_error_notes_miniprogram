@@ -60,6 +60,17 @@
   font-size: 12px;
 }
 
+.localization-notice {
+  display: block;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  color: #8d6e63;
+  background: #fff8e1;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .field {
   background: #fff;
   border-radius: 8px;
