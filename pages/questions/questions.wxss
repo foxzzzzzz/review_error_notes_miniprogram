@@ -9,20 +9,70 @@
   background: #fff;
   border-radius: 8px;
   padding: 8px 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-}
-
-.filters picker {
-  margin-right: 12px;
-  font-size: 14px;
-  color: #333;
 }
 
 .filters input {
   flex: 1;
   font-size: 14px;
   color: #666;
+}
+
+.filter-scroll {
+  width: 100%;
+  white-space: nowrap;
+  margin-bottom: 8px;
+}
+
+.filter-row {
+  display: inline-flex;
+  padding: 2px 0;
+}
+
+.filter-chip {
+  flex: none;
+  font-size: 13px;
+  color: #666;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 6px 12px;
+  margin-right: 8px;
+}
+
+.filter-chip.is-active {
+  color: #1aad19;
+  background: #e8f5e9;
+  border-color: #b9e4bd;
+}
+
+.selection-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #1aad19;
+  padding: 8px 2px 12px;
+}
+
+.select-all-button {
+  margin: 0;
+  padding: 0 10px;
+  line-height: 28px;
+  font-size: 13px;
+  color: #1aad19;
+  background: #e8f5e9;
+  border: none;
+  border-radius: 16px;
+}
+
+.select-all-button::after {
+  border: none;
+}
+
+.loaded-count {
+  color: #999;
 }
 
 .list {
@@ -44,12 +94,24 @@
   margin-bottom: 8px;
 }
 
+.card-meta {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .subject-tag {
   font-size: 12px;
   color: #1aad19;
   background: #e8f5e9;
   padding: 2px 8px;
   border-radius: 4px;
+}
+
+.created-at {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #999;
 }
 
 .status {
@@ -99,6 +161,13 @@
 
 .card-foot checkbox {
   margin-left: auto;
+}
+
+.list-state {
+  text-align: center;
+  font-size: 13px;
+  color: #999;
+  padding: 18px 0;
 }
 
 .bar {

@@ -1,15 +1,44 @@
 <view class="questions">
   <view class="filters">
-    <picker range="{{subjects}}" bindchange="onFilter">
-      <text>{{subjects[filterIndex]}}</text>
-    </picker>
     <input placeholder="搜索标签" bindconfirm="onSearch" />
+  </view>
+
+  <scroll-view scroll-x class="filter-scroll" enable-flex>
+    <view class="filter-row">
+      <text
+        wx:for="{{subjectFilters}}"
+        wx:key="value"
+        class="filter-chip {{subjectFilter === item.value || (!subjectFilter && !item.value) ? 'is-active' : ''}}"
+        data-value="{{item.value}}"
+        bindtap="onSubjectFilter"
+      >{{item.label}}</text>
+    </view>
+  </scroll-view>
+
+  <scroll-view scroll-x class="filter-scroll" enable-flex>
+    <view class="filter-row">
+      <text
+        wx:for="{{timeFilters}}"
+        wx:key="value"
+        class="filter-chip {{timeFilter === item.value ? 'is-active' : ''}}"
+        data-value="{{item.value}}"
+        bindtap="onTimeFilter"
+      >{{item.label}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="selection-tools">
+    <button class="select-all-button" bindtap="onToggleSelectAll">{{allLoadedSelected ? '取消全选' : '全选当前已加载'}}</button>
+    <text class="loaded-count">已加载{{questions.length}}条</text>
   </view>
 
   <view class="list">
     <view class="card" wx:for="{{questions}}" wx:key="id" bindtap="onDetail" data-id="{{item.id}}">
       <view class="card-head">
-        <text class="subject-tag">{{subjectMap[item.subject] || item.subject}}</text>
+        <view class="card-meta">
+          <text class="subject-tag">{{subjectMap[item.subject] || item.subject}}</text>
+          <text class="created-at">{{item.createdAtText}}</text>
+        </view>
         <text class="status">{{item.statusText}}</text>
       </view>
       <text class="card-text">{{item.ocr_text || '待识别...'}}</text>
@@ -23,6 +52,10 @@
       </view>
     </view>
   </view>
+
+  <view class="list-state" wx:if="{{loading}}">加载中</view>
+  <view class="list-state" wx:elif="{{!loading && questions.length === 0}}">没有符合条件的错题</view>
+  <view class="list-state" wx:elif="{{!loading && !hasMore}}">已加载全部错题</view>
 
   <view class="bar" wx:if="{{selectedCount > 0}}">
     <text>已选 {{selectedCount}} 道</text>
