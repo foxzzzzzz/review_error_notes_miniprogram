@@ -1,15 +1,35 @@
 const api = require('../../utils/api');
 Page({
-  data: { question: {}, reviewInfo: null, subjects: ['数学','语文','英语'], subjectIndex: 0 },
+  data: {
+    question: {},
+    reviewInfo: null,
+    subjects: ['数学','语文','英语'],
+    subjectIndex: 0,
+    cropImagePath: '',
+    originalImagePath: '',
+    imageLoading: false,
+    imageError: '',
+    difficultyLabel: '很简单',
+    difficultyOptions: [
+      { value: 1, label: '很简单' },
+      { value: 2, label: '简单' },
+      { value: 3, label: '中等' },
+      { value: 4, label: '困难' },
+      { value: 5, label: '很困难' },
+    ],
+  },
   onLoad(options) {
     return api.getQuestion(options.id).then(q => {
       const subjectIndex = ['math','chinese','english'].indexOf(q.subject);
+      const difficulty = Number.isInteger(q.difficulty) && q.difficulty >= 1 && q.difficulty <= 5
+        ? q.difficulty
+        : 1;
       const raw = q.ocr_raw_json || {};
       const confidenceText = typeof raw.confidence === 'number'
         ? `${Math.round(raw.confidence * 100)}%`
         : '未提供';
       this.setData({
-        question: { ...q, image_url: api.resolveServerUrl(q.image_url) },
+        question: { ...q, difficulty },
         reviewInfo: {
           normalizedText: raw.normalized_text || '',
           answer: q.ocr_answer || raw.answer || '',
@@ -17,8 +37,53 @@ Page({
           uncertainSegments: raw.uncertain_segments || [],
         },
         subjectIndex: subjectIndex < 0 ? 0 : subjectIndex,
+        difficultyLabel: this.data.difficultyOptions[difficulty - 1].label,
       });
+      return this.loadCropImage();
     }).catch(() => wx.showToast({ title: '加载失败', icon: 'none' }));
+  },
+  loadCropImage() {
+    const questionId = this.data.question.id;
+    if (!questionId) return Promise.resolve();
+    this.setData({ cropImagePath: '', imageLoading: true, imageError: '' });
+    return api.downloadQuestionImage(questionId, 'crop').then(path => {
+      this.setData({ cropImagePath: path, imageLoading: false, imageError: '' });
+    }).catch(() => {
+      this.setData({
+        cropImagePath: '',
+        imageLoading: false,
+        imageError: '图片加载失败，请重试',
+      });
+    });
+  },
+  onImageError() {
+    this.setData({
+      cropImagePath: '',
+      imageLoading: false,
+      imageError: '图片加载失败，请重试',
+    });
+  },
+  previewOriginal() {
+    if (this.data.originalImagePath) {
+      this.showOriginalPreview(this.data.originalImagePath);
+      return Promise.resolve();
+    }
+    if (this.data.imageLoading) return Promise.resolve();
+    this.setData({ imageLoading: true });
+    return api.downloadQuestionImage(this.data.question.id, 'original').then(path => {
+      this.setData({ originalImagePath: path, imageLoading: false });
+      this.showOriginalPreview(path);
+    }).catch(() => {
+      this.setData({ imageLoading: false });
+      wx.showToast({ title: '原图加载失败', icon: 'none' });
+    });
+  },
+  showOriginalPreview(path) {
+    wx.previewImage({
+      current: path,
+      urls: [path],
+      fail: () => wx.showToast({ title: '原图预览失败', icon: 'none' }),
+    });
   },
   save() {
     api.updateQuestion(this.data.question.id, this.data.question)
@@ -40,7 +105,12 @@ Page({
     const idx = parseInt(e.detail.value);
     this.setData({ subjectIndex: idx, 'question.subject': ['math','chinese','english'][idx] });
   },
-  onDifficulty(e) {
-    this.setData({ 'question.difficulty': e.detail.value });
+  onDifficultyTap(e) {
+    const difficulty = Number(e.currentTarget.dataset.value);
+    if (!Number.isInteger(difficulty) || difficulty < 1 || difficulty > 5) return;
+    this.setData({
+      'question.difficulty': difficulty,
+      difficultyLabel: this.data.difficultyOptions[difficulty - 1].label,
+    });
   },
 });

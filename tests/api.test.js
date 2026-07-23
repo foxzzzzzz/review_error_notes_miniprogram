@@ -12,6 +12,7 @@ function loadApi(wxOverrides = {}) {
     getStorageSync: () => 'test-token',
     request: () => {},
     uploadFile: () => {},
+    downloadFile: () => {},
     ...wxOverrides,
   };
   return require(apiPath);
@@ -90,6 +91,71 @@ test('server URL resolver expands relative file paths', () => {
   assert.equal(api.resolveServerUrl('/uploads/a.jpg'), SERVER_BASE + '/uploads/a.jpg');
   assert.equal(api.resolveServerUrl('https://cdn.example/a.jpg'), 'https://cdn.example/a.jpg');
   assert.equal(api.resolveServerUrl(''), '');
+});
+
+
+test('question image download sends authentication and returns the temporary path', async () => {
+  let call;
+  const api = loadApi({
+    downloadFile(options) {
+      call = options;
+      options.success({ statusCode: 200, tempFilePath: 'wxfile://question.jpg' });
+    },
+  });
+
+  const result = await api.downloadQuestionImage('question-7', 'original');
+
+  assert.equal(call.url.endsWith('/api/questions/question-7/image?view=original'), true);
+  assert.equal(call.header.Authorization, 'Bearer test-token');
+  assert.equal(result, 'wxfile://question.jpg');
+});
+
+
+test('question image download rejects non-2xx responses', async () => {
+  const api = loadApi({
+    downloadFile(options) {
+      options.success({ statusCode: 422 });
+    },
+  });
+
+  await assert.rejects(api.downloadQuestionImage('question-7'), error => {
+    assert.equal(error.name, 'ApiError');
+    assert.equal(error.statusCode, 422);
+    assert.equal(error.message, '图片加载失败 (422)');
+    return true;
+  });
+});
+
+
+test('question image download rejects a missing temporary path', async () => {
+  const api = loadApi({
+    downloadFile(options) {
+      options.success({ statusCode: 200 });
+    },
+  });
+
+  await assert.rejects(api.downloadQuestionImage('question-7'), error => {
+    assert.equal(error.name, 'ApiError');
+    assert.equal(error.statusCode, 200);
+    return true;
+  });
+});
+
+
+test('question image download handles an expired login', async () => {
+  const removed = [];
+  let relaunched = false;
+  const api = loadApi({
+    removeStorageSync(key) { removed.push(key); },
+    reLaunch() { relaunched = true; },
+    downloadFile(options) {
+      options.success({ statusCode: 401 });
+    },
+  });
+
+  await assert.rejects(api.downloadQuestionImage('question-7'), error => error.statusCode === 401);
+  assert.deepEqual(removed, ['token', 'studentId']);
+  assert.equal(relaunched, true);
 });
 
 

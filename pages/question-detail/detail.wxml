@@ -1,5 +1,24 @@
 <view class="detail">
-  <image wx:if="{{question.image_url}}" class="original" src="{{question.image_url}}" mode="widthFix" />
+  <view class="question-image-card">
+    <text class="image-title">当前错题</text>
+    <image
+      wx:if="{{cropImagePath}}"
+      class="question-image"
+      src="{{cropImagePath}}"
+      mode="widthFix"
+      bindtap="previewOriginal"
+      binderror="onImageError"
+    />
+    <view wx:elif="{{imageLoading}}" class="image-state">图片加载中...</view>
+    <view wx:elif="{{imageError}}" class="image-state image-error">
+      <text>{{imageError}}</text>
+      <button class="image-retry" catchtap="loadCropImage">重新加载</button>
+    </view>
+    <view wx:else class="image-state">暂无图片</view>
+    <text wx:if="{{cropImagePath}}" class="image-hint">
+      {{imageLoading ? '正在打开原图...' : '点击查看整张原图'}}
+    </text>
+  </view>
   <view class="field">
     <text class="label">科目:</text>
     <picker range="{{subjects}}" value="{{subjectIndex}}" bindchange="onSubjectChange">
@@ -39,8 +58,17 @@
     </view>
   </view>
   <view class="field">
-    <text class="label">难度: {{question.difficulty}}⭐</text>
-    <slider min="1" max="5" value="{{question.difficulty}}" bindchange="onDifficulty" />
+    <text class="label">题目难度（用于生成同类练习）</text>
+    <view class="difficulty-stars">
+      <text
+        class="difficulty-star {{item.value <= question.difficulty ? 'active' : ''}}"
+        wx:for="{{difficultyOptions}}"
+        wx:key="value"
+        data-value="{{item.value}}"
+        bindtap="onDifficultyTap"
+      >{{item.value <= question.difficulty ? '★' : '☆'}}</text>
+    </view>
+    <text class="difficulty-value">{{question.difficulty}} · {{difficultyLabel}}</text>
   </view>
   <button bindtap="save">保存修改</button>
   <button class="danger" bindtap="remove">删除</button>

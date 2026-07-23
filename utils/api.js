@@ -53,6 +53,24 @@ const request = (url, options = {}) => {
   });
 };
 
+const downloadQuestionImage = (questionId, view = 'crop') => new Promise((resolve, reject) => {
+  wx.downloadFile({
+    url: `${BASE_URL}/questions/${encodeURIComponent(questionId)}/image?view=${encodeURIComponent(view)}`,
+    header: { 'Authorization': `Bearer ${wx.getStorageSync('token') || ''}` },
+    success(res) {
+      if (res.statusCode >= 200 && res.statusCode < 300 && res.tempFilePath) {
+        resolve(res.tempFilePath);
+        return;
+      }
+      if (res.statusCode === 401) handleUnauthorized();
+      reject(new ApiError(`图片加载失败 (${res.statusCode || 0})`, res.statusCode || 0));
+    },
+    fail() {
+      reject(new ApiError('图片加载失败', 0));
+    },
+  });
+});
+
 module.exports = {
   login: (code) => request('/auth/login', { method: 'POST', data: { code } }),
   devLogin: (code) => request('/auth/dev-login', { method: 'POST', data: { code } }),
@@ -96,6 +114,7 @@ module.exports = {
   deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
   getProfile: () => request('/profile'),
   updateProfile: (data) => request('/profile', { method: 'PATCH', data }),
+  downloadQuestionImage,
   resolveServerUrl,
   ApiError,
 };

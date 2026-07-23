@@ -2,10 +2,62 @@
   padding: 16px;
 }
 
-.original {
+.question-image-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.image-title {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.question-image {
   width: 100%;
   border-radius: 8px;
-  margin-bottom: 16px;
+  background: #f5f5f5;
+}
+
+.image-state {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #999;
+  background: #f5f5f5;
+}
+
+.image-error {
+  color: #c62828;
+  background: #fff5f5;
+}
+
+.image-retry {
+  width: auto;
+  margin: 12px 0 0;
+  padding: 4px 16px;
+  border: 1px solid #1aad19;
+  border-radius: 6px;
+  color: #1aad19;
+  background: #fff;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.image-hint {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  color: #888;
+  font-size: 12px;
 }
 
 .field {
@@ -86,8 +138,30 @@
   min-width: 80px;
 }
 
-.field slider {
-  width: 100%;
+.difficulty-stars {
+  display: flex;
+  align-items: center;
+}
+
+.difficulty-star {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d8d8d8;
+  font-size: 32px;
+  line-height: 44px;
+}
+
+.difficulty-star.active {
+  color: #f5a623;
+}
+
+.difficulty-value {
+  display: block;
+  color: #666;
+  font-size: 13px;
 }
 
 button {
