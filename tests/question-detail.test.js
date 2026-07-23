@@ -21,17 +21,22 @@ const question = {
   },
 };
 
-function createHarness(downloadImpl = (_id, view) =>
-  Promise.resolve(view === 'crop' ? 'wxfile://crop.jpg' : 'wxfile://original.jpg')) {
+function createHarness(
+  downloadImpl = (_id, view) =>
+    Promise.resolve(view === 'crop' ? 'wxfile://crop.jpg' : 'wxfile://original.jpg'),
+  deleteImpl = () => Promise.resolve()
+) {
   const api = require(apiPath);
   const originalGetQuestion = api.getQuestion;
   const originalDownloadQuestionImage = api.downloadQuestionImage;
+  const originalDeleteQuestion = api.deleteQuestion;
   const originalPage = global.Page;
   const originalWx = global.wx;
   const downloads = [];
   const previews = [];
   const toasts = [];
   let currentDownloadImpl = downloadImpl;
+  let currentDeleteImpl = deleteImpl;
   let pageDefinition;
 
   api.getQuestion = () => Promise.resolve({ ...question });
@@ -39,9 +44,12 @@ function createHarness(downloadImpl = (_id, view) =>
     downloads.push([id, view]);
     return currentDownloadImpl(id, view);
   };
+  api.deleteQuestion = id => currentDeleteImpl(id);
   global.wx = {
     previewImage(options) { previews.push(options); },
     showToast(options) { toasts.push(options); },
+    showModal(options) { options.success({ confirm: true }); },
+    navigateBack() {},
   };
   global.Page = definition => { pageDefinition = definition; };
   delete require.cache[pagePath];
@@ -68,9 +76,11 @@ function createHarness(downloadImpl = (_id, view) =>
     previews,
     toasts,
     setDownloadImpl(value) { currentDownloadImpl = value; },
+    setDeleteImpl(value) { currentDeleteImpl = value; },
     cleanup() {
       api.getQuestion = originalGetQuestion;
       api.downloadQuestionImage = originalDownloadQuestionImage;
+      api.deleteQuestion = originalDeleteQuestion;
       global.Page = originalPage;
       global.wx = originalWx;
       delete require.cache[pagePath];
@@ -173,6 +183,109 @@ test('question detail deduplicates rapid original image requests', async () => {
     resolvers[0]('wxfile://original.jpg');
     await Promise.all([firstPreview, secondPreview]);
     assert.equal(harness.previews.length, 1);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('question detail maps image download status codes consistently', async () => {
+  const harness = createHarness();
+
+  try {
+    harness.page.data.question = { ...question };
+
+    for (const [statusCode, message] of [
+      [404, '原图文件不存在，请重新录入'],
+      [422, '图片文件损坏，无法显示'],
+      [500, '图片加载失败，请重试'],
+    ]) {
+      harness.setDownloadImpl(() => Promise.reject({ statusCode }));
+      await harness.page.loadCropImage();
+      assert.equal(harness.page.data.imageError, message);
+
+      await harness.page.previewOriginal();
+      assert.equal(harness.toasts.at(-1).title, message);
+    }
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('question detail keeps crop image feedback empty after a 401 response', async () => {
+  const harness = createHarness(() => Promise.reject({ statusCode: 401 }));
+
+  try {
+    harness.page.data.question = { ...question };
+    harness.page.data.cropImagePath = 'wxfile://stale-crop.jpg';
+    harness.page.data.imageError = 'previous error';
+
+    await harness.page.loadCropImage();
+
+    assert.equal(harness.page.data.cropImagePath, '');
+    assert.equal(harness.page.data.imageLoading, false);
+    assert.equal(harness.page.data.imageError, '');
+    assert.equal(harness.toasts.length, 0);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('question detail does not toast for an original image 401 response', async () => {
+  const harness = createHarness(() => Promise.reject({ statusCode: 401 }));
+
+  try {
+    harness.page.data.question = { ...question };
+
+    await harness.page.previewOriginal();
+
+    assert.equal(harness.page.data.imageLoading, false);
+    assert.equal(harness.toasts.length, 0);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('question detail does not add a generic toast after an onLoad crop 404', async () => {
+  const harness = createHarness(() => Promise.reject({ statusCode: 404 }));
+
+  try {
+    await harness.page.onLoad({ id: 'review-question' });
+
+    assert.equal(harness.page.data.imageError, '原图文件不存在，请重新录入');
+    assert.equal(harness.toasts.length, 0);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('question detail shows the backend delete failure message first', async () => {
+  const harness = createHarness();
+
+  try {
+    harness.page.data.question = { ...question };
+    harness.setDeleteImpl(() => Promise.reject({ message: '该错题已被删除' }));
+
+    harness.page.remove();
+    await new Promise(resolve => setImmediate(resolve));
+
+    assert.equal(harness.toasts.at(-1).title, '该错题已被删除');
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('question detail falls back when the delete failure has no message', async () => {
+  const harness = createHarness();
+
+  try {
+    harness.page.data.question = { ...question };
+
+    for (const error of [{}, { message: '' }]) {
+      harness.setDeleteImpl(() => Promise.reject(error));
+      harness.page.remove();
+      await new Promise(resolve => setImmediate(resolve));
+      assert.equal(harness.toasts.at(-1).title, '删除失败');
+    }
   } finally {
     harness.cleanup();
   }

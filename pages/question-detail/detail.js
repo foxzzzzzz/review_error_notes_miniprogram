@@ -1,4 +1,11 @@
 const api = require('../../utils/api');
+
+const imageErrorMessage = (error) => {
+  if (error && error.statusCode === 404) return '原图文件不存在，请重新录入';
+  if (error && error.statusCode === 422) return '图片文件损坏，无法显示';
+  return '图片加载失败，请重试';
+};
+
 Page({
   data: {
     question: {},
@@ -48,11 +55,11 @@ Page({
     this.setData({ cropImagePath: '', imageLoading: true, imageError: '' });
     return api.downloadQuestionImage(questionId, 'crop').then(path => {
       this.setData({ cropImagePath: path, imageLoading: false, imageError: '' });
-    }).catch(() => {
+    }).catch(error => {
       this.setData({
         cropImagePath: '',
         imageLoading: false,
-        imageError: '图片加载失败，请重试',
+        imageError: error && error.statusCode === 401 ? '' : imageErrorMessage(error),
       });
     });
   },
@@ -73,9 +80,10 @@ Page({
     return api.downloadQuestionImage(this.data.question.id, 'original').then(path => {
       this.setData({ originalImagePath: path, imageLoading: false });
       this.showOriginalPreview(path);
-    }).catch(() => {
+    }).catch(error => {
       this.setData({ imageLoading: false });
-      wx.showToast({ title: '原图加载失败', icon: 'none' });
+      if (error && error.statusCode === 401) return;
+      wx.showToast({ title: imageErrorMessage(error), icon: 'none' });
     });
   },
   showOriginalPreview(path) {
@@ -95,7 +103,10 @@ Page({
       if (r.confirm) {
         api.deleteQuestion(this.data.question.id)
           .then(() => wx.navigateBack())
-          .catch(() => wx.showToast({ title: '删除失败', icon: 'none' }));
+          .catch(error => wx.showToast({
+            title: (error && error.message) || '删除失败',
+            icon: 'none',
+          }));
       }
     }});
   },
