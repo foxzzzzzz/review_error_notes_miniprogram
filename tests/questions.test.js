@@ -71,8 +71,8 @@ test('questions page renders human-readable vision review status', async () => {
   let pageDefinition;
 
   api.listQuestions = () => Promise.resolve([
-    { id: 'review', difficulty: 1, status: 'needs_review' },
-    { id: 'done', difficulty: 1, status: 'confirmed' },
+    { id: 'review', difficulty: 1, review_status: 'needs_review' },
+    { id: 'done', difficulty: 1, review_status: 'confirmed' },
   ]);
   global.Page = definition => { pageDefinition = definition; };
   delete require.cache[pagePath];

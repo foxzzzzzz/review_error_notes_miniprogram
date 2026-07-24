@@ -5,14 +5,19 @@ const fs = require('node:fs');
 
 const { SERVER_BASE } = require('../utils/config');
 const apiPath = path.resolve(__dirname, '..', 'utils', 'api.js');
+const sessionPath = path.resolve(__dirname, '..', 'utils', 'session.js');
 
 function loadApi(wxOverrides = {}) {
   delete require.cache[apiPath];
+  delete require.cache[sessionPath];
   global.wx = {
     getStorageSync: () => 'test-token',
+    setStorageSync: () => {},
+    removeStorageSync: () => {},
     request: () => {},
     uploadFile: () => {},
     downloadFile: () => {},
+    reLaunch: () => {},
     ...wxOverrides,
   };
   return require(apiPath);
@@ -142,20 +147,42 @@ test('question image download rejects a missing temporary path', async () => {
 });
 
 
-test('question image download handles an expired login', async () => {
+test('question image download retries once after an expired login', async () => {
   const removed = [];
+  let downloads = 0;
+  let loginRequests = 0;
   let relaunched = false;
   const api = loadApi({
     removeStorageSync(key) { removed.push(key); },
     reLaunch() { relaunched = true; },
+    request(options) {
+      loginRequests += 1;
+      options.success({
+        statusCode: 200,
+        data: {
+          token: 'renewed',
+          account_id: 'account-1',
+          student_id: 'student-1',
+        },
+      });
+    },
     downloadFile(options) {
-      options.success({ statusCode: 401 });
+      downloads += 1;
+      options.success(
+        downloads === 1
+          ? { statusCode: 401 }
+          : { statusCode: 200, tempFilePath: 'wxfile://retried.jpg' }
+      );
     },
   });
 
-  await assert.rejects(api.downloadQuestionImage('question-7'), error => error.statusCode === 401);
-  assert.deepEqual(removed, ['token', 'studentId']);
-  assert.equal(relaunched, true);
+  const result = await api.downloadQuestionImage('question-7');
+
+  assert.equal(result, 'wxfile://retried.jpg');
+  assert.equal(downloads, 2);
+  assert.equal(loginRequests, 1);
+  assert.deepEqual(removed, ['token']);
+  assert.equal(relaunched, false);
 });
 
 
@@ -205,20 +232,41 @@ for (const statusCode of [400, 500]) {
 }
 
 
-test('request rejects 401 and clears the stored login', async () => {
+test('request retries once after 401 with a renewed session', async () => {
   const removed = [];
+  let businessRequests = 0;
+  let loginRequests = 0;
   let relaunched = false;
   const api = loadApi({
     removeStorageSync(key) { removed.push(key); },
     reLaunch() { relaunched = true; },
     request(options) {
-      options.success({ statusCode: 401, data: { detail: 'expired' } });
+      if (options.url.endsWith('/auth/dev-login')) {
+        loginRequests += 1;
+        options.success({
+          statusCode: 200,
+          data: {
+            token: 'renewed',
+            account_id: 'account-1',
+            student_id: 'student-1',
+          },
+        });
+        return;
+      }
+      businessRequests += 1;
+      options.success(
+        businessRequests === 1
+          ? { statusCode: 401, data: { detail: 'expired' } }
+          : { statusCode: 200, data: [] }
+      );
     },
   });
 
-  await assert.rejects(api.listSheets(), error => error.statusCode === 401);
-  assert.deepEqual(removed, ['token', 'studentId']);
-  assert.equal(relaunched, true);
+  assert.deepEqual(await api.listSheets(), []);
+  assert.equal(businessRequests, 2);
+  assert.equal(loginRequests, 1);
+  assert.deepEqual(removed, ['token']);
+  assert.equal(relaunched, false);
 });
 
 
@@ -235,6 +283,37 @@ test('upload rejects non-2xx responses', async () => {
     assert.equal(error.message, 'invalid upload');
     return true;
   });
+});
+
+
+test('upload retries a bodyless 401 after renewing the session', async () => {
+  let uploads = 0;
+  let loginRequests = 0;
+  const api = loadApi({
+    request(options) {
+      loginRequests += 1;
+      options.success({
+        statusCode: 200,
+        data: {
+          token: 'renewed',
+          account_id: 'account-1',
+          student_id: 'student-1',
+        },
+      });
+    },
+    uploadFile(options) {
+      uploads += 1;
+      options.success(
+        uploads === 1
+          ? { statusCode: 401, data: '' }
+          : { statusCode: 200, data: '{"image_id":"image-1"}' }
+      );
+    },
+  });
+
+  assert.deepEqual(await api.uploadImage('/tmp/a.jpg'), { image_id: 'image-1' });
+  assert.equal(uploads, 2);
+  assert.equal(loginRequests, 1);
 });
 
 

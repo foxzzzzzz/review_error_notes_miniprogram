@@ -56,7 +56,7 @@ const prepareQuestions = data => data.map(q => ({
   selected: false,
   createdAtText: formatCreatedAt(q.created_at),
   difficultyStars: q.difficulty ? '⭐'.repeat(q.difficulty) : '?',
-  statusText: statusMap[q.status] || q.status,
+  statusText: statusMap[q.review_status] || q.review_status,
 }));
 
 Page({
