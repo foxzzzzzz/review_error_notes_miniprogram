@@ -10,8 +10,8 @@
 
   <view class="upload-list" wx:if="{{uploads.length > 0}}">
     <view class="upload-item" wx:for="{{uploads}}" wx:key="id">
-      <text>📄 第{{index+1}}页</text>
-      <text class="status status-{{item.status}}">{{statusText[item.status]}}</text>
+      <text class="upload-page">📄 第{{index+1}}页</text>
+      <text class="status upload-status status-{{item.status}}">{{statusText[item.status]}}</text>
       <text class="subject-tag" bindtap="onSubjectTap" data-index="{{index}}">
         {{item.subject ? (subjectMap[item.subject] || item.subject) : '点击选择科目'}}
       </text>

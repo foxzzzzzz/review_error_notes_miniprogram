@@ -75,6 +75,7 @@ Page({
     selectedIds: [],
     selectedCount: 0,
     allLoadedSelected: false,
+    deleting: false,
     subjectMap: { math: '数学', chinese: '语文', english: '英语' },
     subjectFilters: [
       { label: '全部', value: '' },
@@ -225,6 +226,63 @@ Page({
   goToSheet() {
     wx.setStorageSync('selectedIds', this.data.selectedIds);
     wx.switchTab({ url: '/pages/sheet/sheet' });
+  },
+  onDeleteSelected() {
+    const selectedIds = this.data.selectedIds.slice();
+    if (this.data.deleting || selectedIds.length === 0) return Promise.resolve();
+
+    return new Promise(resolve => {
+      wx.showModal({
+        title: '删除已选错题',
+        content: `确认删除已选的 ${selectedIds.length} 道错题吗？`,
+        confirmText: '删除',
+        confirmColor: '#e53935',
+        success: result => {
+          if (!result.confirm) {
+            resolve();
+            return;
+          }
+          this.deleteSelectedQuestions(selectedIds).then(resolve, resolve);
+        },
+        fail: resolve,
+      });
+    });
+  },
+  async deleteSelectedQuestions(selectedIds) {
+    this.setData({ deleting: true });
+    let deletedCount = 0;
+    const deletedIds = [];
+
+    try {
+      for (const id of selectedIds) {
+        try {
+          await api.deleteQuestion(id);
+          deletedCount += 1;
+          deletedIds.push(id);
+        } catch (_error) {
+          // Continue deleting the remaining selected questions.
+        }
+      }
+
+      const storedIds = wx.getStorageSync('selectedIds') || [];
+      if (Array.isArray(storedIds)) {
+        wx.setStorageSync(
+          'selectedIds',
+          storedIds.filter(id => !deletedIds.includes(id))
+        );
+      }
+      await this.load({ reset: true });
+
+      const failedCount = selectedIds.length - deletedCount;
+      wx.showToast({
+        title: failedCount === 0
+          ? `已删除 ${deletedCount} 道`
+          : `成功${deletedCount}道，失败${failedCount}道`,
+        icon: 'none',
+      });
+    } finally {
+      this.setData({ deleting: false });
+    }
   },
   showError() {
     wx.showToast({ title: '加载失败，请重试', icon: 'none' });

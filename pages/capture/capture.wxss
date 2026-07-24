@@ -38,7 +38,8 @@
 }
 
 .upload-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   align-items: center;
   padding: 12px;
   background: #fff;
@@ -47,9 +48,13 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.upload-item text {
-  margin-right: 8px;
+.upload-page {
+  justify-self: start;
   font-size: 14px;
+}
+
+.upload-status {
+  justify-self: center;
 }
 
 .status {
@@ -79,7 +84,8 @@
   padding: 2px 8px;
   border: 1px solid #1aad19;
   border-radius: 4px;
-  margin-left: auto;
+  justify-self: center;
+  text-align: center;
 }
 
 .submit-btn {

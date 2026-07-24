@@ -1,5 +1,22 @@
 const api = require('../../utils/api');
 
+const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
+const pad = value => String(value).padStart(2, '0');
+
+const formatBeijingDateTime = createdAt => {
+  if (!createdAt) return '';
+  const text = String(createdAt);
+  const date = new Date(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(text) ? text : `${text}Z`);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const beijingDate = new Date(date.getTime() + BEIJING_OFFSET_MS);
+  return [
+    beijingDate.getUTCFullYear(),
+    pad(beijingDate.getUTCMonth() + 1),
+    pad(beijingDate.getUTCDate()),
+  ].join('-') + ` ${pad(beijingDate.getUTCHours())}:${pad(beijingDate.getUTCMinutes())}`;
+};
+
 Page({
   data: {
     selectedIds: [],
@@ -13,8 +30,13 @@ Page({
 
   onShow() {
     this.setData({ selectedIds: wx.getStorageSync('selectedIds') || [] });
-    api.listSheets()
-      .then(data => this.setData({ sheets: data }))
+    return api.listSheets()
+      .then(data => this.setData({
+        sheets: data.map(sheet => ({
+          ...sheet,
+          createdAtText: formatBeijingDateTime(sheet.created_at),
+        })),
+      }))
       .catch(() => wx.showToast({ title: '历史记录加载失败', icon: 'none' }));
   },
 
@@ -71,3 +93,5 @@ Page({
 
   onDifficulty(e) { this.setData({ difficultyBoost: e.detail.value }); },
 });
+
+module.exports = { formatBeijingDateTime };

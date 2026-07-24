@@ -42,7 +42,7 @@
     <view class="section-title">历史错题集</view>
     <view class="history-item" wx:for="{{sheets}}" wx:key="id" bindtap="openSheet" data-url="{{item.pdf_url}}">
       <text>📝 {{item.title || '错题集'}}</text>
-      <text>{{item.created_at}}</text>
+      <text>{{item.createdAtText}}</text>
     </view>
   </view>
 </view>

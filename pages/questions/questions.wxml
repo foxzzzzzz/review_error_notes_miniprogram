@@ -59,6 +59,11 @@
 
   <view class="bar" wx:if="{{selectedCount > 0}}">
     <text>已选 {{selectedCount}} 道</text>
-    <button bindtap="goToSheet">生成错题集</button>
+    <view class="bar-actions">
+      <button class="generate-button" bindtap="goToSheet" disabled="{{deleting}}">生成错题集</button>
+      <button class="delete-button" bindtap="onDeleteSelected" loading="{{deleting}}" disabled="{{deleting}}">
+        删除已选（{{selectedCount}}）
+      </button>
+    </view>
   </view>
 </view>

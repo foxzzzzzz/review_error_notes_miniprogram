@@ -189,10 +189,25 @@
   color: #333;
 }
 
+.bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .bar button {
+  margin: 0;
   background: #1aad19;
   color: #fff;
   font-size: 14px;
   border-radius: 6px;
-  padding: 8px 20px;
+  padding: 8px 12px;
+}
+
+.bar .delete-button {
+  background: #e53935;
+}
+
+.bar button[disabled] {
+  opacity: 0.6;
 }
