@@ -1,4 +1,9 @@
 const api = require('../../utils/api');
+const session = require('../../utils/session');
+
+const validPickerIndex = (value, length) => (
+  Number.isInteger(value) && value >= 0 && value < length
+);
 
 Page({
   data: {
@@ -15,16 +20,26 @@ Page({
     this.loadProfile();
   },
   loadProfile() {
+    const storedGradeIndex = wx.getStorageSync('grade');
+    const storedSemester = wx.getStorageSync('semester');
     this.setData({
-      gradeIndex: wx.getStorageSync('grade') ?? 0,
-      semester: wx.getStorageSync('semester') ?? 0,
+      gradeIndex: validPickerIndex(storedGradeIndex, this.data.grades.length)
+        ? storedGradeIndex
+        : 0,
+      semester: validPickerIndex(storedSemester, this.data.semesters.length)
+        ? storedSemester
+        : 0,
       phoneBound: wx.getStorageSync('phoneBound') ?? false,
       phoneMasked: wx.getStorageSync('phoneMasked') ?? '',
       nickname: wx.getStorageSync('nickname') ?? '',
     });
-    api.getProfile().then(profile => {
-      const gradeIndex = profile.grade - 1;
-      const semester = profile.semester - 1;
+    return api.getProfile().then(profile => {
+      const gradeIndex = Number.isInteger(profile.grade)
+        ? profile.grade - 1
+        : this.data.gradeIndex;
+      const semester = Number.isInteger(profile.semester)
+        ? profile.semester - 1
+        : this.data.semester;
       wx.setStorageSync('grade', gradeIndex);
       wx.setStorageSync('semester', semester);
       wx.setStorageSync('phoneBound', profile.phone_bound);
@@ -62,8 +77,6 @@ Page({
     }
   },
   onLogout() {
-    wx.removeStorageSync('token');
-    wx.removeStorageSync('studentId');
-    wx.reLaunch({ url: '/pages/profile/profile' });
+    session.logoutLocal({ manual: true, redirect: true });
   },
 });

@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 
 const sessionPath = path.resolve(__dirname, '..', 'utils', 'session.js');
+const apiPath = path.resolve(__dirname, '..', 'utils', 'api.js');
+const profilePath = path.resolve(__dirname, '..', 'pages', 'profile', 'profile.js');
 
 function loadSession(wxOverrides = {}) {
   delete require.cache[sessionPath];
@@ -130,4 +132,84 @@ test('failed retry clears all local account context and redirects', async () => 
 
   assert.deepEqual(removed, ['token', 'token', 'accountId', 'studentId']);
   assert.equal(relaunched, true);
+});
+
+function loadProfilePage({ profile, logoutLocal }) {
+  let definition;
+  delete require.cache[profilePath];
+  require.cache[apiPath] = {
+    id: apiPath,
+    filename: apiPath,
+    loaded: true,
+    exports: {
+      getProfile: () => Promise.resolve(profile),
+      updateProfile: () => Promise.resolve(),
+      bindPhone: () => Promise.resolve(),
+    },
+  };
+  require.cache[sessionPath] = {
+    id: sessionPath,
+    filename: sessionPath,
+    loaded: true,
+    exports: { logoutLocal },
+  };
+  global.Page = value => { definition = value; };
+  require(profilePath);
+  return definition;
+}
+
+test('profile page delegates manual logout to the session module', () => {
+  let logoutOptions;
+  const definition = loadProfilePage({
+    profile: {},
+    logoutLocal: options => { logoutOptions = options; },
+  });
+
+  try {
+    definition.onLogout();
+    assert.deepEqual(logoutOptions, { manual: true, redirect: true });
+  } finally {
+    delete global.Page;
+    delete require.cache[profilePath];
+    delete require.cache[apiPath];
+    delete require.cache[sessionPath];
+  }
+});
+
+test('profile page does not store negative picker indexes for unset settings', async () => {
+  const storage = new Map([['grade', 2], ['semester', 1]]);
+  global.wx = {
+    getStorageSync: key => storage.get(key),
+    setStorageSync: (key, value) => storage.set(key, value),
+    showToast() {},
+  };
+  const definition = loadProfilePage({
+    profile: {
+      nickname: null,
+      grade: null,
+      semester: null,
+      phone_bound: false,
+      phone_masked: '',
+    },
+    logoutLocal() {},
+  });
+  const page = {
+    ...definition,
+    data: { ...definition.data },
+    setData(values) { Object.assign(this.data, values); },
+  };
+
+  try {
+    await page.loadProfile();
+    assert.equal(page.data.gradeIndex, 2);
+    assert.equal(page.data.semester, 1);
+    assert.equal(storage.get('grade'), 2);
+    assert.equal(storage.get('semester'), 1);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[profilePath];
+    delete require.cache[apiPath];
+    delete require.cache[sessionPath];
+  }
 });
