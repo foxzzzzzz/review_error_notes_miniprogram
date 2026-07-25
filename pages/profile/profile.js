@@ -62,7 +62,7 @@ Page({
       ? profile.semester - 1
       : (validPickerIndex(storedSemester, SEMESTERS.length) ? storedSemester : 0);
     const nickname = profile.nickname || '';
-    const avatarUrl = api.resolveServerUrl(profile.avatar_url || '');
+    const avatarUrl = profile.avatar_url ? this.data.avatarUrl : '';
     const stats = profile.stats || {};
 
     if (gradeSet) wx.setStorageSync('grade', gradeIndex);
@@ -101,7 +101,16 @@ Page({
   loadProfile() {
     this.setData({ loading: true });
     return api.getProfile()
-      .then(profile => this.applyProfile(profile))
+      .then(profile => {
+        this.applyProfile(profile);
+        if (!profile.avatar_url) return null;
+        return api.downloadAvatar(profile.avatar_url)
+          .then(avatarUrl => this.setData({ avatarUrl }))
+          .catch(() => this.setData({
+            avatarUrl: '',
+            avatarTempPath: '',
+          }));
+      })
       .catch(() => wx.showToast({ title: '资料加载失败', icon: 'none' }))
       .finally(() => this.setData({ loading: false }));
   },
@@ -131,8 +140,13 @@ Page({
 
   uploadSelectedAvatar() {
     if (!this.data.avatarTempPath) return Promise.resolve(null);
-    return api.uploadAvatar(this.data.avatarTempPath).then(profile => {
+    const avatarTempPath = this.data.avatarTempPath;
+    return api.uploadAvatar(avatarTempPath).then(profile => {
       this.applyProfile(profile);
+      this.setData({
+        avatarUrl: avatarTempPath,
+        avatarTempPath: '',
+      });
       return profile;
     });
   },

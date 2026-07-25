@@ -68,6 +68,39 @@ test('avatar upload sends the selected file with authentication', async () => {
   assert.equal(result.avatar_url, '/avatars/account.jpg');
 });
 
+test('avatar download expands the server path and returns a temporary file', async () => {
+  let call;
+  const api = loadApi({
+    downloadFile(options) {
+      call = options;
+      options.success({
+        statusCode: 200,
+        tempFilePath: 'wxfile://avatar.jpg',
+      });
+    },
+  });
+
+  const result = await api.downloadAvatar('/avatars/account.jpg');
+
+  assert.equal(call.url, SERVER_BASE + '/avatars/account.jpg');
+  assert.equal(result, 'wxfile://avatar.jpg');
+});
+
+test('avatar download rejects a missing temporary file', async () => {
+  const api = loadApi({
+    downloadFile(options) {
+      options.success({ statusCode: 200 });
+    },
+  });
+
+  await assert.rejects(api.downloadAvatar('/avatars/account.jpg'), error => {
+    assert.equal(error.name, 'ApiError');
+    assert.equal(error.statusCode, 200);
+    assert.equal(error.message, '头像加载失败 (200)');
+    return true;
+  });
+});
+
 
 test('image upload sends subject and school settings as form data', async () => {
   let call;

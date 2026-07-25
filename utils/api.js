@@ -157,6 +157,27 @@ const uploadAvatar = (filePath, retried = false) => (
   })
 );
 
+const downloadAvatar = (path) => (
+  new Promise((resolve, reject) => {
+    wx.downloadFile({
+      url: resolveServerUrl(path),
+      success(res) {
+        if (res.statusCode >= 200 && res.statusCode < 300 && res.tempFilePath) {
+          resolve(res.tempFilePath);
+          return;
+        }
+        reject(new ApiError(
+          `头像加载失败 (${res.statusCode || 0})`,
+          res.statusCode || 0
+        ));
+      },
+      fail() {
+        reject(new ApiError('头像加载失败', 0));
+      },
+    });
+  })
+);
+
 module.exports = {
   login: (code) => request('/auth/login', { method: 'POST', data: { code } }),
   devLogin: (code) => request('/auth/dev-login', { method: 'POST', data: { code } }),
@@ -178,6 +199,7 @@ module.exports = {
   updateProfile: (data) => request('/profile', { method: 'PATCH', data }),
   skipProfilePrompt: () => request('/profile/prompt/skip', { method: 'POST' }),
   uploadAvatar,
+  downloadAvatar,
   downloadQuestionImage,
   resolveServerUrl,
   ApiError,

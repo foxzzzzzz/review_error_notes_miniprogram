@@ -195,6 +195,7 @@ function loadProfilePage({ profile = {}, logoutLocal = () => {}, apiOverrides = 
       updateProfile: () => Promise.resolve(),
       skipProfilePrompt: () => Promise.resolve(profile),
       uploadAvatar: () => Promise.resolve(profile),
+      downloadAvatar: () => Promise.resolve('wxfile://avatar.jpg'),
       resolveServerUrl: value => value,
       ...apiOverrides,
     },
@@ -304,6 +305,7 @@ test('profile page stays logged out without calling a protected endpoint after m
 });
 
 test('profile page maps backend profile prompt and statistics', async () => {
+  const avatarDownloads = [];
   global.wx = {
     getStorageSync(key) {
       if (key === 'token') return 'token';
@@ -325,6 +327,12 @@ test('profile page maps backend profile prompt and statistics', async () => {
       phone_masked: '',
       stats: { total: 8, month_new: 3, needs_review: 6, mastered: 2 },
     },
+    apiOverrides: {
+      downloadAvatar(path) {
+        avatarDownloads.push(path);
+        return Promise.resolve('wxfile://downloaded-avatar.jpg');
+      },
+    },
   });
   const page = {
     ...definition,
@@ -336,13 +344,106 @@ test('profile page maps backend profile prompt and statistics', async () => {
     await page.onShow();
     assert.equal(page.data.loggedIn, true);
     assert.equal(page.data.showProfilePrompt, true);
-    assert.equal(page.data.avatarUrl, '/avatars/a.jpg');
+    assert.deepEqual(avatarDownloads, ['/avatars/a.jpg']);
+    assert.equal(page.data.avatarUrl, 'wxfile://downloaded-avatar.jpg');
     assert.deepEqual(page.data.stats, {
       total: 8,
       monthNew: 3,
       needsReview: 6,
       mastered: 2,
     });
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[profilePath];
+    delete require.cache[apiPath];
+    delete require.cache[sessionPath];
+  }
+});
+
+test('profile page falls back to the nickname initial when avatar download fails', async () => {
+  global.wx = {
+    getStorageSync(key) {
+      if (key === 'token') return 'token';
+      return '';
+    },
+    setStorageSync() {},
+    showToast() {},
+  };
+  const definition = loadProfilePage({
+    profile: {
+      nickname: '小明',
+      avatar_url: '/avatars/missing.jpg',
+      profile_prompt_required: false,
+      grade: 1,
+      semester: 1,
+      student_profile_required: false,
+      phone_bound: false,
+      stats: {},
+    },
+    apiOverrides: {
+      downloadAvatar: () => Promise.reject(new Error('download failed')),
+    },
+  });
+  const page = {
+    ...definition,
+    data: { ...definition.data },
+    setData(values) { Object.assign(this.data, values); },
+  };
+
+  try {
+    await page.onShow();
+    assert.equal(page.data.avatarUrl, '');
+    assert.equal(page.data.avatarTempPath, '');
+    assert.equal(page.data.avatarInitial, '小');
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[profilePath];
+    delete require.cache[apiPath];
+    delete require.cache[sessionPath];
+  }
+});
+
+test('profile page does not download an avatar when the profile has none', async () => {
+  let downloads = 0;
+  global.wx = {
+    getStorageSync(key) {
+      if (key === 'token') return 'token';
+      return '';
+    },
+    setStorageSync() {},
+    showToast() {},
+  };
+  const definition = loadProfilePage({
+    profile: {
+      nickname: '小明',
+      avatar_url: null,
+      profile_prompt_required: false,
+      grade: 1,
+      semester: 1,
+      student_profile_required: false,
+      phone_bound: false,
+      stats: {},
+    },
+    apiOverrides: {
+      downloadAvatar() {
+        downloads += 1;
+        return Promise.resolve('wxfile://unexpected.jpg');
+      },
+    },
+  });
+  const page = {
+    ...definition,
+    data: { ...definition.data },
+    setData(values) { Object.assign(this.data, values); },
+  };
+
+  try {
+    await page.onShow();
+    assert.equal(downloads, 0);
+    assert.equal(page.data.avatarUrl, '');
+    assert.equal(page.data.avatarInitial, '小');
   } finally {
     delete global.wx;
     delete global.Page;
