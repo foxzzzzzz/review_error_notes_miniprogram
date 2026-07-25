@@ -19,7 +19,10 @@ class ApiError extends Error {
 }
 
 const errorMessage = (data, statusCode) => {
-  if (data && typeof data === 'object' && data.detail) return data.detail;
+  if (data && typeof data === 'object' && data.detail) {
+    if (typeof data.detail === 'string') return data.detail;
+    if (data.detail.message) return data.detail.message;
+  }
   return `请求失败 (${statusCode})`;
 };
 
@@ -194,6 +197,17 @@ module.exports = {
   updateQuestion: (id, data) => request(`/questions/${id}`, { method: 'PATCH', data }),
   createSheet: (data) => request('/sheets', { method: 'POST', data }),
   listSheets: () => request('/sheets'),
+  getSheetReview: (id) => request(`/sheets/${id}/review`),
+  listSheetAttempts: (id) => request(`/sheets/${id}/attempts`),
+  createSheetAttempt: (id, data) => (
+    request(`/sheets/${id}/attempts`, { method: 'POST', data })
+  ),
+  updateSheetAttempt: (sheetId, attemptId, data) => (
+    request(`/sheets/${sheetId}/attempts/${attemptId}`, {
+      method: 'PATCH',
+      data,
+    })
+  ),
   deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
   getProfile: () => request('/profile'),
   updateProfile: (data) => request('/profile', { method: 'PATCH', data }),

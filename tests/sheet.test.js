@@ -80,3 +80,11 @@ test('generate shows the actionable backend error', async () => {
   assert.equal(toast.title, '请重新上传图片识别后再出卷');
   assert.equal(toast.icon, 'none');
 });
+
+
+test('history exposes separate PDF and practice result actions', () => {
+  assert.match(wxml, /bindtap="openSheet"/);
+  assert.match(wxml, /bindtap="openResult"/);
+  assert.match(wxml, /记录结果/);
+  assert.match(wxml, /修改结果/);
+});

@@ -1,0 +1,144 @@
+.result-page {
+  min-height: 100vh;
+  padding: 24rpx 24rpx 180rpx;
+  background: #f5f6f7;
+  box-sizing: border-box;
+}
+
+.loading {
+  padding: 80rpx 0;
+  color: #999;
+  text-align: center;
+}
+
+.summary-card,
+.question-group {
+  margin-bottom: 20rpx;
+  padding: 28rpx;
+  border-radius: 20rpx;
+  background: #fff;
+}
+
+.title {
+  color: #222;
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.hint {
+  margin-top: 12rpx;
+  color: #888;
+  font-size: 25rpx;
+}
+
+.summary {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 28rpx;
+  color: #444;
+}
+
+.accuracy,
+.bar-accuracy {
+  margin-left: 18rpx;
+  color: #1aad19;
+  font-weight: 600;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.batch-actions button {
+  margin: 0;
+}
+
+.group-title {
+  margin-bottom: 16rpx;
+  color: #666;
+  font-size: 26rpx;
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14rpx;
+  padding: 22rpx;
+  border: 2rpx solid #e7e7e7;
+  border-radius: 14rpx;
+}
+
+.result-item.correct {
+  border-color: #a8dfad;
+  background: #f2fbf3;
+}
+
+.result-item.wrong {
+  border-color: #efb2ae;
+  background: #fff6f5;
+}
+
+.item-content {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.item-type {
+  flex: none;
+  margin-right: 16rpx;
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+  background: #edf6ff;
+  color: #287bb5;
+  font-size: 22rpx;
+}
+
+.question-text {
+  color: #333;
+  font-size: 29rpx;
+  line-height: 1.5;
+}
+
+.check {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 46rpx;
+  height: 46rpx;
+  margin-left: 18rpx;
+  border: 2rpx solid #bbb;
+  border-radius: 8rpx;
+  color: #1aad19;
+  font-size: 34rpx;
+}
+
+.correct .check {
+  border-color: #1aad19;
+}
+
+.submit-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 24rpx;
+  background: #fff;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.submit-button {
+  width: 240rpx;
+  margin: 0;
+  background: #1aad19;
+  color: #fff;
+}

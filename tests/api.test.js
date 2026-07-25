@@ -290,6 +290,28 @@ for (const statusCode of [400, 500]) {
 }
 
 
+test('request displays the message from a structured business error', async () => {
+  const api = loadApi({
+    request(options) {
+      options.success({
+        statusCode: 409,
+        data: {
+          detail: {
+            code: 'attempt_conflict',
+            message: '练习结果已发生变化，请刷新后重试',
+          },
+        },
+      });
+    },
+  });
+
+  await assert.rejects(api.listSheets(), error => {
+    assert.equal(error.message, '练习结果已发生变化，请刷新后重试');
+    return true;
+  });
+});
+
+
 test('request retries once after 401 with a renewed session', async () => {
   const removed = [];
   let businessRequests = 0;

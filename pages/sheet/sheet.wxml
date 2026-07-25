@@ -40,9 +40,22 @@
 
   <view class="history">
     <view class="section-title">历史错题集</view>
-    <view class="history-item" wx:for="{{sheets}}" wx:key="id" bindtap="openSheet" data-url="{{item.pdf_url}}">
-      <text>📝 {{item.title || '错题集'}}</text>
-      <text>{{item.createdAtText}}</text>
+    <view class="history-item" wx:for="{{sheets}}" wx:key="id">
+      <view class="history-main">
+        <text class="history-title">📝 {{item.title || '错题集'}}</text>
+        <text class="history-time">{{item.createdAtText}}</text>
+        <view class="history-status">
+          <text>{{item.practice_status === 'completed' ? '已完成' : '未练习'}}</text>
+          <text wx:if="{{item.latest_accuracy !== null && item.latest_accuracy !== undefined}}">最近正确率 {{item.accuracyText}}</text>
+          <text>已记录 {{item.attempt_count || 0}} 次</text>
+        </view>
+      </view>
+      <view class="history-actions">
+        <button size="mini" bindtap="openSheet" data-url="{{item.pdf_url}}">查看 PDF</button>
+        <button class="result-action" size="mini" bindtap="openResult" data-id="{{item.id}}">
+          {{item.practice_status === 'completed' ? '修改结果' : '记录结果'}}
+        </button>
+      </view>
     </view>
   </view>
 </view>

@@ -1,0 +1,57 @@
+<view class="result-page">
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+
+  <block wx:else>
+    <view class="summary-card">
+      <view class="title">{{title}}</view>
+      <view class="hint">默认全部答对，只需取消本次仍答错的题目</view>
+      <view class="summary">
+        <text>{{correctCount}} / {{totalCount}} 题答对</text>
+        <text class="accuracy">正确率 {{accuracyText}}</text>
+      </view>
+      <view class="batch-actions">
+        <button size="mini" bindtap="selectAll">全选本次答对</button>
+        <button size="mini" bindtap="clearAll">取消全选</button>
+      </view>
+    </view>
+
+    <view
+      class="question-group"
+      wx:for="{{groups}}"
+      wx:key="wrongQuestionId"
+      wx:for-item="group"
+      wx:for-index="groupIndex"
+    >
+      <view class="group-title">第 {{groupIndex + 1}} 组</view>
+      <view
+        class="result-item {{item.isCorrect ? 'correct' : 'wrong'}}"
+        wx:for="{{group.items}}"
+        wx:key="sheetItemId"
+        wx:for-item="item"
+        wx:for-index="itemIndex"
+        bindtap="toggleItem"
+        data-group-index="{{groupIndex}}"
+        data-item-index="{{itemIndex}}"
+      >
+        <view class="item-content">
+          <text class="item-type">{{item.questionType === 'original' ? '原题' : '衍生题'}}</text>
+          <text class="question-text">{{item.questionText}}</text>
+        </view>
+        <view class="check">{{item.isCorrect ? '✓' : ''}}</view>
+      </view>
+    </view>
+
+    <view class="submit-bar">
+      <view>
+        <text>本次答对 {{correctCount}} 题</text>
+        <text class="bar-accuracy">{{accuracyText}}</text>
+      </view>
+      <button
+        class="submit-button"
+        bindtap="submit"
+        loading="{{submitting}}"
+        disabled="{{submitting || totalCount === 0}}"
+      >{{attemptId ? '保存修改' : '提交结果'}}</button>
+    </view>
+  </block>
+</view>

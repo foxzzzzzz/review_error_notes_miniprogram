@@ -11,4 +11,11 @@
 .result button { margin: 8px 0; }
 .history { margin-top: 20px; }
 .section-title { font-size: 14px; color: #999; padding: 10px 0; }
-.history-item { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.history-item { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 8px; }
+.history-main { display: flex; flex-direction: column; gap: 6px; }
+.history-title { color: #333; font-size: 16px; }
+.history-time { color: #999; font-size: 13px; }
+.history-status { display: flex; gap: 12px; color: #777; font-size: 12px; }
+.history-actions { display: flex; gap: 10px; margin-top: 12px; }
+.history-actions button { flex: 1; margin: 0; }
+.history-actions .result-action { color: #fff; background: #1aad19; }

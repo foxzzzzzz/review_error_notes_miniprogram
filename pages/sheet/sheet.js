@@ -35,6 +35,9 @@ Page({
         sheets: data.map(sheet => ({
           ...sheet,
           createdAtText: formatBeijingDateTime(sheet.created_at),
+          accuracyText: sheet.latest_accuracy == null
+            ? ''
+            : `${Math.round(Number(sheet.latest_accuracy) * 100)}%`,
         })),
       }))
       .catch(() => wx.showToast({ title: '历史记录加载失败', icon: 'none' }));
@@ -84,6 +87,12 @@ Page({
     wx.downloadFile({
       url,
       success: res => wx.openDocument({ filePath: res.tempFilePath, fileType: 'pdf' }),
+    });
+  },
+
+  openResult(e) {
+    wx.navigateTo({
+      url: `/pages/sheet-result/result?sheetId=${encodeURIComponent(e.currentTarget.dataset.id)}`,
     });
   },
 

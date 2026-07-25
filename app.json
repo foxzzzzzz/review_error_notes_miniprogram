@@ -4,6 +4,7 @@
     "pages/questions/questions",
     "pages/question-detail/detail",
     "pages/sheet/sheet",
+    "pages/sheet-result/result",
     "pages/profile/profile"
   ],
   "tabBar": {
