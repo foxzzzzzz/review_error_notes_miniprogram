@@ -1,6 +1,6 @@
 <view class="capture">
   <view class="info-bar">
-    📖 {{grades[gradeIndex]}} · {{semesters[semester]}}
+    📖 {{gradeSet && semesterSet ? grades[gradeIndex] + ' · ' + semesters[semester] : '请先设置年级和册别'}}
   </view>
 
   <view class="camera-area" bindtap="takePhoto">
@@ -19,4 +19,25 @@
   </view>
 
   <button class="submit-btn" bindtap="submitAll" disabled="{{uploading}}">确认提交</button>
+
+  <view wx:if="{{showStudentSettings}}" class="settings-mask">
+    <view class="settings-sheet">
+      <view class="settings-title">先完善学生设置</view>
+      <view class="settings-copy">用于匹配题目范围，本次保存后会继续提交图片</view>
+      <picker mode="selector" range="{{grades}}" value="{{settingsGradeIndex}}" bindchange="onSettingsGradeChange">
+        <view class="settings-row">
+          <text>年级</text>
+          <text>{{grades[settingsGradeIndex]}} ›</text>
+        </view>
+      </picker>
+      <picker mode="selector" range="{{semesters}}" value="{{settingsSemester}}" bindchange="onSettingsSemesterChange">
+        <view class="settings-row">
+          <text>册别</text>
+          <text>{{semesters[settingsSemester]}} ›</text>
+        </view>
+      </picker>
+      <button class="submit-btn" loading="{{uploading}}" bindtap="onSaveStudentSettings">保存并继续</button>
+      <button class="cancel-settings" disabled="{{uploading}}" bindtap="onCloseStudentSettings">取消</button>
+    </view>
+  </view>
 </view>

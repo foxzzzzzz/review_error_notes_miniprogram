@@ -1,4 +1,9 @@
 <view class="questions">
+  <view wx:if="{{entryFilterLabel}}" class="entry-filter-banner">
+    <text>当前查看：{{entryFilterLabel}}</text>
+    <text bindtap="onClearEntryFilter">清除</text>
+  </view>
+
   <view class="filters">
     <input placeholder="搜索标签" bindconfirm="onSearch" />
   </view>

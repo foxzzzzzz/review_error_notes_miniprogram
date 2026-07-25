@@ -68,6 +68,10 @@ Page({
     timeFilter: '',
     tag: '',
     tagFilter: '',
+    statusFilter: '',
+    masteryFilter: '',
+    createdFromOverride: '',
+    entryFilterLabel: '',
     loading: false,
     hasMore: true,
     offset: 0,
@@ -92,7 +96,27 @@ Page({
     ],
   },
   onShow() {
-    if (this._isQuestionLoading) return Promise.resolve();
+    const entryFilter = typeof wx !== 'undefined' && wx.getStorageSync
+      ? wx.getStorageSync('questionEntryFilter')
+      : null;
+    if (this._isQuestionLoading && (!entryFilter || typeof entryFilter !== 'object')) {
+      return Promise.resolve();
+    }
+    if (entryFilter && typeof entryFilter === 'object') {
+      wx.removeStorageSync('questionEntryFilter');
+      this.setData({
+        filterIndex: 0,
+        subject: null,
+        subjectFilter: null,
+        timeFilter: '',
+        tag: '',
+        tagFilter: '',
+        statusFilter: entryFilter.status || '',
+        masteryFilter: entryFilter.mastery_status || '',
+        createdFromOverride: entryFilter.created_from || '',
+        entryFilterLabel: entryFilter.label || '',
+      });
+    }
 
     const restoreOnError = this.data.questions.length ? {
       questions: this.data.questions,
@@ -136,7 +160,13 @@ Page({
     const params = { limit: PAGE_SIZE, offset };
     if (this.data.subjectFilter) params.subject = this.data.subjectFilter;
     if (this.data.tagFilter) params.tag = this.data.tagFilter;
-    if (this.data.timeFilter) params.created_from = getCreatedFrom(Number(this.data.timeFilter));
+    if (this.data.statusFilter) params.status = this.data.statusFilter;
+    if (this.data.masteryFilter) params.mastery_status = this.data.masteryFilter;
+    if (this.data.createdFromOverride) {
+      params.created_from = this.data.createdFromOverride;
+    } else if (this.data.timeFilter) {
+      params.created_from = getCreatedFrom(Number(this.data.timeFilter));
+    }
 
     this.setData(reset
       ? { questions: [], selectedIds: [], selectedCount: 0, allLoadedSelected: false, offset: 0, hasMore: true, loading: true }
@@ -192,6 +222,15 @@ Page({
   onSearch(e) {
     const tag = e.detail.value;
     this.setData({ tag, tagFilter: tag });
+    return this.load({ reset: true });
+  },
+  onClearEntryFilter() {
+    this.setData({
+      statusFilter: '',
+      masteryFilter: '',
+      createdFromOverride: '',
+      entryFilterLabel: '',
+    });
     return this.load({ reset: true });
   },
   onReachBottom() {

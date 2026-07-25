@@ -390,6 +390,53 @@ test('questions page combines subject, tag, and time filters in one request', as
   }
 });
 
+test('questions page consumes a profile statistics filter once', async () => {
+  const api = require(apiPath);
+  const originalListQuestions = api.listQuestions;
+  const requests = [];
+  const storage = new Map([[
+    'questionEntryFilter',
+    {
+      label: '已掌握',
+      mastery_status: 'mastered',
+    },
+  ]]);
+  let pageDefinition;
+
+  api.listQuestions = params => {
+    requests.push(params);
+    return Promise.resolve([]);
+  };
+  global.wx = {
+    getStorageSync: key => storage.get(key),
+    removeStorageSync: key => storage.delete(key),
+  };
+  global.Page = definition => { pageDefinition = definition; };
+  delete require.cache[pagePath];
+  require(pagePath);
+  const page = {
+    ...pageDefinition,
+    data: { ...pageDefinition.data },
+    setData(values) { Object.assign(this.data, values); },
+  };
+
+  try {
+    await page.onShow();
+    assert.equal(storage.has('questionEntryFilter'), false);
+    assert.equal(page.data.entryFilterLabel, '已掌握');
+    assert.deepEqual(requests[0], {
+      limit: 20,
+      offset: 0,
+      mastery_status: 'mastered',
+    });
+  } finally {
+    api.listQuestions = originalListQuestions;
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[pagePath];
+  }
+});
+
 test('questions page selects and deselects only the currently loaded questions', () => {
   let pageDefinition;
   global.Page = definition => { pageDefinition = definition; };
@@ -626,6 +673,64 @@ test('questions page does not queue a reset when onShow runs during an active re
     assert.equal(page._requestGeneration, 1);
   } finally {
     api.listQuestions = originalListQuestions;
+    delete global.Page;
+    delete require.cache[pagePath];
+  }
+});
+
+test('questions page applies a statistics entry filter received during an active request', async () => {
+  const api = require(apiPath);
+  const originalListQuestions = api.listQuestions;
+  const requests = [];
+  const resolvers = [];
+  const storage = new Map();
+  let pageDefinition;
+
+  api.listQuestions = params => {
+    requests.push(params);
+    return new Promise(resolve => resolvers.push(resolve));
+  };
+  global.wx = {
+    getStorageSync: key => storage.get(key),
+    removeStorageSync: key => storage.delete(key),
+  };
+  global.Page = definition => { pageDefinition = definition; };
+  delete require.cache[pagePath];
+  require(pagePath);
+
+  const page = {
+    ...pageDefinition,
+    data: { ...pageDefinition.data },
+    setData(values) { Object.assign(this.data, values); },
+  };
+
+  try {
+    const activeLoad = page.load({ reset: false });
+    storage.set('questionEntryFilter', {
+      label: '已掌握',
+      mastery_status: 'mastered',
+    });
+    const filteredLoad = page.onShow();
+
+    assert.equal(storage.has('questionEntryFilter'), false);
+    assert.equal(page.data.entryFilterLabel, '已掌握');
+    assert.equal(page._pendingReset, true);
+
+    resolvers[0]([{ id: 'stale' }]);
+    await activeLoad;
+    assert.equal(requests.length, 2);
+    assert.deepEqual(requests[1], {
+      limit: 20,
+      offset: 0,
+      mastery_status: 'mastered',
+    });
+
+    resolvers[1]([{ id: 'mastered' }]);
+    await filteredLoad;
+    assert.deepEqual(page.data.questions.map(question => question.id), ['mastered']);
+  } finally {
+    api.listQuestions = originalListQuestions;
+    delete global.wx;
     delete global.Page;
     delete require.cache[pagePath];
   }

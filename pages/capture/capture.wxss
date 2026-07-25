@@ -100,3 +100,54 @@
 .submit-btn[disabled] {
   background: #ccc;
 }
+
+.settings-mask {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(15, 20, 16, 0.48);
+}
+
+.settings-sheet {
+  width: 100%;
+  padding: 24px 20px calc(14px + env(safe-area-inset-bottom));
+  border-radius: 18px 18px 0 0;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.settings-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.settings-copy {
+  margin: 8px 0 20px;
+  color: #8b9188;
+  font-size: 13px;
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 2px;
+  border-top: 1px solid #eef0ed;
+  font-size: 16px;
+}
+
+.settings-row text:last-child {
+  color: #25823a;
+}
+
+.cancel-settings {
+  margin-top: 8px;
+  background: transparent;
+  color: #858b82;
+  font-size: 14px;
+}
+
+.cancel-settings::after {
+  border: 0;
+}

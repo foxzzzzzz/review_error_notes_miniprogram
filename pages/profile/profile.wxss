@@ -1,61 +1,319 @@
+page {
+  background: #f5f6f3;
+}
+
 .profile {
-  padding: 0 16px;
+  min-height: 100vh;
+  padding: 24rpx 28rpx 56rpx;
+  box-sizing: border-box;
+  color: #20231f;
 }
 
-.header {
+.identity-card,
+.section,
+.logged-out-card {
+  background: #ffffff;
+  border-radius: 28rpx;
+  box-shadow: 0 8rpx 28rpx rgba(31, 51, 34, 0.05);
+}
+
+.identity-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 32px 0;
-  background: #fff;
-  border-radius: 12px;
-  margin: 16px 0;
+  padding: 34rpx;
+  margin-bottom: 24rpx;
 }
 
-.avatar {
-  width: 72px;
-  height: 72px;
+.avatar-button,
+.prompt-avatar {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  line-height: normal;
+}
+
+.avatar-button::after,
+.prompt-avatar::after {
+  border: 0;
+}
+
+.avatar-button {
+  position: relative;
+  width: 128rpx;
+  height: 128rpx;
+  flex: none;
+}
+
+.avatar-image,
+.avatar-fallback {
+  width: 128rpx;
+  height: 128rpx;
   border-radius: 50%;
-  margin-bottom: 12px;
+}
+
+.avatar-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e8f5e9;
-  color: #1aad19;
-  font-size: 28px;
-  font-weight: 600;
+  color: #158a36;
+  font-size: 52rpx;
+  font-weight: 700;
+  background: linear-gradient(145deg, #e5f7e8, #ccefd4);
 }
 
-.name {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 4px;
+.avatar-edit {
+  position: absolute;
+  right: -6rpx;
+  bottom: 2rpx;
+  padding: 5rpx 12rpx;
+  border-radius: 16rpx;
+  background: #1aa83b;
+  color: #ffffff;
+  font-size: 20rpx;
 }
 
-.phone {
-  font-size: 14px;
-  color: #999;
+.identity-copy {
+  margin-left: 28rpx;
+}
+
+.account-name {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.account-note,
+.setting-help,
+.prompt-copy,
+.logged-out-copy {
+  color: #92978f;
+  font-size: 24rpx;
+}
+
+.account-note {
+  margin-top: 10rpx;
 }
 
 .section {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
 }
 
-.section-title {
-  font-size: 13px;
-  color: #999;
-  margin-bottom: 12px;
+.section-title,
+.section-eyebrow {
+  color: #858b82;
+  font-size: 24rpx;
+  letter-spacing: 1rpx;
 }
 
-.row {
-  padding: 12px 0;
-  font-size: 16px;
-  border-bottom: 1rpx solid #f0f0f0;
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 24rpx;
 }
 
-.row:last-child {
-  border-bottom: none;
+.student-name {
+  width: 360rpx;
+  height: 56rpx;
+  margin-top: 5rpx;
+  font-size: 34rpx;
+  font-weight: 650;
+}
+
+.student-badge,
+.future-pill {
+  padding: 10rpx 18rpx;
+  border-radius: 24rpx;
+  background: #eef8ef;
+  color: #188d38;
+  font-size: 23rpx;
+}
+
+.setting-row,
+.account-row {
+  min-height: 108rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1rpx solid #edf0eb;
+}
+
+.setting-label {
+  font-size: 29rpx;
+  font-weight: 560;
+}
+
+.setting-help {
+  margin-top: 8rpx;
+}
+
+.setting-value {
+  color: #2d713d;
+  font-size: 28rpx;
+}
+
+.setting-value text {
+  margin-left: 10rpx;
+  color: #a7ada5;
+  font-size: 36rpx;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 24rpx;
+}
+
+.stat-card {
+  padding: 24rpx;
+  border-radius: 22rpx;
+  background: #f7f8f5;
+}
+
+.stat-total {
+  background: #eaf7ec;
+}
+
+.stat-mastered {
+  background: #fff7dc;
+}
+
+.stat-value {
+  font-size: 44rpx;
+  line-height: 1.1;
+  font-weight: 750;
+}
+
+.stat-label {
+  margin-top: 12rpx;
+  color: #777d74;
+  font-size: 24rpx;
+}
+
+.logout-row {
+  margin-top: 8rpx;
+  padding: 28rpx 0 4rpx;
+  border-top: 1rpx solid #edf0eb;
+  color: #d34c45;
+  text-align: center;
+  font-size: 28rpx;
+}
+
+.logged-out-card {
+  margin-top: 140rpx;
+  padding: 64rpx 42rpx 46rpx;
+  text-align: center;
+}
+
+.logged-out-mark {
+  width: 112rpx;
+  height: 112rpx;
+  margin: 0 auto 30rpx;
+  border-radius: 32rpx;
+  background: #e5f6e8;
+  color: #149036;
+  font-size: 54rpx;
+  font-weight: 750;
+  line-height: 112rpx;
+}
+
+.logged-out-title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.logged-out-copy {
+  margin: 20rpx 0 42rpx;
+  line-height: 1.7;
+}
+
+.primary-button {
+  height: 88rpx;
+  border-radius: 20rpx;
+  background: #18a83a;
+  color: #ffffff;
+  font-size: 30rpx;
+  line-height: 88rpx;
+}
+
+.primary-button::after,
+.skip-button::after {
+  border: 0;
+}
+
+.prompt-mask {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(16, 22, 17, 0.48);
+}
+
+.prompt-card {
+  width: 100%;
+  padding: 42rpx 36rpx calc(28rpx + env(safe-area-inset-bottom));
+  border-radius: 34rpx 34rpx 0 0;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.prompt-title {
+  font-size: 38rpx;
+  font-weight: 720;
+}
+
+.prompt-copy {
+  margin-top: 14rpx;
+  line-height: 1.6;
+}
+
+.prompt-avatar {
+  display: flex;
+  align-items: center;
+  margin: 34rpx auto;
+  color: #198d38;
+  font-size: 26rpx;
+}
+
+.prompt-avatar image,
+.prompt-avatar view {
+  width: 96rpx;
+  height: 96rpx;
+  margin-right: 20rpx;
+  border-radius: 50%;
+  background: #e6f5e8;
+  line-height: 96rpx;
+  text-align: center;
+  font-size: 40rpx;
+}
+
+.nickname-field {
+  display: flex;
+  align-items: center;
+  height: 92rpx;
+  margin-bottom: 28rpx;
+  padding: 0 26rpx;
+  border-radius: 18rpx;
+  background: #f5f7f3;
+}
+
+.nickname-field text {
+  width: 100rpx;
+  color: #6d736a;
+  font-size: 27rpx;
+}
+
+.nickname-field input {
+  flex: 1;
+  font-size: 29rpx;
+}
+
+.skip-button {
+  margin-top: 12rpx;
+  background: transparent;
+  color: #858b82;
+  font-size: 27rpx;
 }

@@ -10,6 +10,9 @@ const storeLogin = (data) => {
   wx.setStorageSync('token', data.token);
   wx.setStorageSync('accountId', data.account_id);
   wx.setStorageSync('studentId', data.student_id);
+  wx.setStorageSync('profilePromptRequired', data.profile_prompt_required === true);
+  wx.setStorageSync('studentProfileRequired', data.student_profile_required === true);
+  wx.setStorageSync('accountStatus', data.account_status || '');
   wx.setStorageSync('manualLogout', false);
   return data;
 };
@@ -18,6 +21,9 @@ const clearSession = () => {
   wx.removeStorageSync('token');
   wx.removeStorageSync('accountId');
   wx.removeStorageSync('studentId');
+  wx.removeStorageSync('profilePromptRequired');
+  wx.removeStorageSync('studentProfileRequired');
+  wx.removeStorageSync('accountStatus');
 };
 
 const requestLogin = (path, code) => new Promise((resolve, reject) => {
@@ -59,6 +65,9 @@ const login = ({ force = false } = {}) => {
       token: wx.getStorageSync('token'),
       account_id: wx.getStorageSync('accountId'),
       student_id: wx.getStorageSync('studentId'),
+      profile_prompt_required: wx.getStorageSync('profilePromptRequired') === true,
+      student_profile_required: wx.getStorageSync('studentProfileRequired') === true,
+      account_status: wx.getStorageSync('accountStatus') || '',
     });
   }
   if (loginPromise) return loginPromise;
@@ -82,6 +91,11 @@ const logoutLocal = ({ manual = true, redirect = true } = {}) => {
 };
 
 const retryAfterUnauthorized = async (runRequest) => {
+  if (wx.getStorageSync('manualLogout') === true) {
+    const error = new Error('manual logout');
+    error.code = 'manual_logout';
+    throw error;
+  }
   wx.removeStorageSync('token');
   try {
     await login({ force: true });

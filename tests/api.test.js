@@ -35,12 +35,37 @@ test('profile methods use the profile endpoint', async () => {
 
   await api.getProfile();
   await api.updateProfile({ grade: 4, semester: 1 });
+  await api.skipProfilePrompt();
 
   assert.equal(calls[0].url.endsWith('/profile'), true);
   assert.equal(calls[0].method, 'GET');
   assert.equal(calls[1].url.endsWith('/profile'), true);
   assert.equal(calls[1].method, 'PATCH');
   assert.deepEqual(calls[1].data, { grade: 4, semester: 1 });
+  assert.equal(calls[2].url.endsWith('/profile/prompt/skip'), true);
+  assert.equal(calls[2].method, 'POST');
+});
+
+
+test('avatar upload sends the selected file with authentication', async () => {
+  let call;
+  const api = loadApi({
+    uploadFile(options) {
+      call = options;
+      options.success({
+        statusCode: 200,
+        data: JSON.stringify({ avatar_url: '/avatars/account.jpg' }),
+      });
+    },
+  });
+
+  const result = await api.uploadAvatar('/tmp/avatar.png');
+
+  assert.equal(call.url.endsWith('/api/profile/avatar'), true);
+  assert.equal(call.filePath, '/tmp/avatar.png');
+  assert.equal(call.name, 'file');
+  assert.equal(call.header.Authorization, 'Bearer test-token');
+  assert.equal(result.avatar_url, '/avatars/account.jpg');
 });
 
 
@@ -203,14 +228,14 @@ test('phone binding submits the one-time WeChat code', async () => {
 });
 
 
-test('profile page reads code from the phone authorization event', () => {
+test('phone binding remains a future action instead of requesting authorization', () => {
   const source = fs.readFileSync(
-    path.resolve(__dirname, '..', 'pages', 'profile', 'profile.js'),
+    path.resolve(__dirname, '..', 'pages', 'profile', 'profile.wxml'),
     'utf8'
   );
 
-  assert.equal(source.includes('e.detail.code'), true);
-  assert.equal(source.includes('e.detail.encryptedData'), false);
+  assert.equal(source.includes('open-type="getPhoneNumber"'), false);
+  assert.equal(source.includes('后续开放'), true);
 });
 
 

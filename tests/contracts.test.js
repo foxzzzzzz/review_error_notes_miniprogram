@@ -33,6 +33,8 @@ test('API wrapper exposes the complete backend route contract', async () => {
   await api.listSheets();
   await api.getProfile();
   await api.updateProfile({ grade: 2 });
+  await api.skipProfilePrompt();
+  await api.uploadAvatar('/tmp/avatar.jpg');
 
   assert.deepEqual(calls, [
     { method: 'POST', path: '/api/auth/login' },
@@ -46,5 +48,7 @@ test('API wrapper exposes the complete backend route contract', async () => {
     { method: 'GET', path: '/api/sheets' },
     { method: 'GET', path: '/api/profile' },
     { method: 'PATCH', path: '/api/profile' },
+    { method: 'POST', path: '/api/profile/prompt/skip' },
+    { method: 'POST', path: '/api/profile/avatar' },
   ]);
 });

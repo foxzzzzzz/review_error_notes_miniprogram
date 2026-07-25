@@ -3,6 +3,22 @@
   padding-bottom: 80px;
 }
 
+.entry-filter-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #edf8ef;
+  color: #25743a;
+  font-size: 13px;
+}
+
+.entry-filter-banner text:last-child {
+  color: #7b8379;
+}
+
 .filters {
   display: flex;
   align-items: center;

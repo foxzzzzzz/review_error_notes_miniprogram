@@ -120,6 +120,43 @@ const uploadImage = (filePath, metadata = {}, retried = false) => (
   })
 );
 
+const uploadAvatar = (filePath, retried = false) => (
+  new Promise((resolve, reject) => {
+    wx.uploadFile({
+      url: BASE_URL + '/profile/avatar',
+      filePath,
+      name: 'file',
+      header: { 'Authorization': `Bearer ${wx.getStorageSync('token') || ''}` },
+      success(res) {
+        if (res.statusCode === 401 && !retried) {
+          session.retryAfterUnauthorized(
+            () => uploadAvatar(filePath, true)
+          ).then(resolve, reject);
+          return;
+        }
+        if (res.statusCode === 401) {
+          terminalUnauthorized();
+          reject(new ApiError('登录已失效', 401));
+          return;
+        }
+        let data;
+        try {
+          data = JSON.parse(res.data);
+        } catch (_error) {
+          reject(new ApiError('服务器返回了无效数据', res.statusCode));
+          return;
+        }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data);
+          return;
+        }
+        reject(new ApiError(errorMessage(data, res.statusCode), res.statusCode, data));
+      },
+      fail: reject,
+    });
+  })
+);
+
 module.exports = {
   login: (code) => request('/auth/login', { method: 'POST', data: { code } }),
   devLogin: (code) => request('/auth/dev-login', { method: 'POST', data: { code } }),
@@ -139,6 +176,8 @@ module.exports = {
   deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
   getProfile: () => request('/profile'),
   updateProfile: (data) => request('/profile', { method: 'PATCH', data }),
+  skipProfilePrompt: () => request('/profile/prompt/skip', { method: 'POST' }),
+  uploadAvatar,
   downloadQuestionImage,
   resolveServerUrl,
   ApiError,
