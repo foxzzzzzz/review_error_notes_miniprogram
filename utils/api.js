@@ -31,7 +31,10 @@ const terminalUnauthorized = () => {
 };
 
 const request = (url, options = {}, retried = false) => {
-  const token = wx.getStorageSync('token');
+  const recoveryRequest = options.authScope === 'recovery';
+  const token = wx.getStorageSync(
+    recoveryRequest ? 'recoveryToken' : 'token'
+  );
   return new Promise((resolve, reject) => {
     wx.request({
       url: BASE_URL + url,
@@ -46,7 +49,7 @@ const request = (url, options = {}, retried = false) => {
           resolve(res.data);
           return;
         }
-        if (res.statusCode === 401 && !retried) {
+        if (res.statusCode === 401 && !retried && !recoveryRequest) {
           session.retryAfterUnauthorized(() => request(url, options, true))
             .then(resolve, reject);
           return;
@@ -185,6 +188,19 @@ module.exports = {
   login: (code) => request('/auth/login', { method: 'POST', data: { code } }),
   devLogin: (code) => request('/auth/dev-login', { method: 'POST', data: { code } }),
   bindPhone: (code) => request('/auth/bind-phone', { method: 'POST', data: { code } }),
+  recoverAccount: (recoveryToken) => request('/auth/recover-account', {
+    method: 'POST',
+    data: { recovery_token: recoveryToken },
+  }),
+  logoutAccount: () => request('/account/logout', { method: 'POST' }),
+  requestAccountDeletion: (loginCode) => request('/account/deletion', {
+    method: 'POST',
+    data: { code: loginCode },
+  }),
+  recoverDeletedAccount: () => request('/account/deletion/recover', {
+    method: 'POST',
+    authScope: 'recovery',
+  }),
   uploadImage,
   listQuestions: (params = {}) => {
     const qs = Object.keys(params)

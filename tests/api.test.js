@@ -239,7 +239,7 @@ test('question image download retries once after an expired login', async () => 
   assert.equal(result, 'wxfile://retried.jpg');
   assert.equal(downloads, 2);
   assert.equal(loginRequests, 1);
-  assert.deepEqual(removed, ['token']);
+  assert.deepEqual(removed, ['token', 'recoveryToken', 'deletionDueAt']);
   assert.equal(relaunched, false);
 });
 
@@ -261,14 +261,94 @@ test('phone binding submits the one-time WeChat code', async () => {
 });
 
 
-test('phone binding remains a future action instead of requesting authorization', () => {
+test('phone binding requests the one-time WeChat phone authorization code', () => {
   const source = fs.readFileSync(
     path.resolve(__dirname, '..', 'pages', 'profile', 'profile.wxml'),
     'utf8'
   );
 
-  assert.equal(source.includes('open-type="getPhoneNumber"'), false);
-  assert.equal(source.includes('后续开放'), true);
+  assert.equal(source.includes('open-type="getPhoneNumber"'), true);
+  assert.equal(source.includes('bindgetphonenumber="onGetPhoneNumber"'), true);
+});
+
+
+test('account recovery and deletion wrappers use their exact payloads and token scopes', async () => {
+  const calls = [];
+  const api = loadApi({
+    getStorageSync(key) {
+      if (key === 'recoveryToken') return 'recovery-token';
+      return 'normal-token';
+    },
+    request(options) {
+      calls.push(options);
+      options.success({ statusCode: 200, data: {} });
+    },
+  });
+
+  await api.recoverAccount('phone-recovery-token');
+  await api.logoutAccount();
+  await api.requestAccountDeletion('fresh-login-code');
+  await api.recoverDeletedAccount();
+
+  assert.deepEqual(calls.map(call => ({
+    path: new URL(call.url).pathname,
+    method: call.method,
+    data: call.data,
+    authorization: call.header.Authorization,
+  })), [
+    {
+      path: '/api/auth/recover-account',
+      method: 'POST',
+      data: { recovery_token: 'phone-recovery-token' },
+      authorization: 'Bearer normal-token',
+    },
+    {
+      path: '/api/account/logout',
+      method: 'POST',
+      data: undefined,
+      authorization: 'Bearer normal-token',
+    },
+    {
+      path: '/api/account/deletion',
+      method: 'POST',
+      data: { code: 'fresh-login-code' },
+      authorization: 'Bearer normal-token',
+    },
+    {
+      path: '/api/account/deletion/recover',
+      method: 'POST',
+      data: undefined,
+      authorization: 'Bearer recovery-token',
+    },
+  ]);
+});
+
+
+test('expired recovery token does not start a normal login retry', async () => {
+  let loginRequests = 0;
+  let recoveryRequests = 0;
+  const api = loadApi({
+    getStorageSync(key) {
+      if (key === 'recoveryToken') return 'expired-recovery-token';
+      if (key === 'manualLogout') return false;
+      return '';
+    },
+    request(options) {
+      if (options.url.endsWith('/auth/dev-login')) {
+        loginRequests += 1;
+      } else {
+        recoveryRequests += 1;
+      }
+      options.success({ statusCode: 401, data: { detail: 'expired' } });
+    },
+  });
+
+  await assert.rejects(api.recoverDeletedAccount(), error => {
+    assert.equal(error.statusCode, 401);
+    return true;
+  });
+  assert.equal(recoveryRequests, 1);
+  assert.equal(loginRequests, 0);
 });
 
 
@@ -345,7 +425,7 @@ test('request retries once after 401 with a renewed session', async () => {
   assert.deepEqual(await api.listSheets(), []);
   assert.equal(businessRequests, 2);
   assert.equal(loginRequests, 1);
-  assert.deepEqual(removed, ['token']);
+  assert.deepEqual(removed, ['token', 'recoveryToken', 'deletionDueAt']);
   assert.equal(relaunched, false);
 });
 

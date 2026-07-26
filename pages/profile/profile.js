@@ -14,9 +14,47 @@ const validPickerIndex = (value, length) => (
   Number.isInteger(value) && value >= 0 && value < length
 );
 
+const showModal = options => new Promise((resolve, reject) => {
+  const result = wx.showModal({
+    ...options,
+    success: resolve,
+    fail: reject,
+  });
+  if (result && typeof result.then === 'function') {
+    result.then(resolve, reject);
+  }
+});
+
+const getErrorDetail = error => (
+  error && error.data && error.data.detail && typeof error.data.detail === 'object'
+    ? error.data.detail
+    : {}
+);
+
+const formatDeletionDueAt = value => {
+  if (!value) return '';
+  const text = String(value);
+  const date = new Date(
+    /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text) ? text : `${text}Z`
+  );
+  if (Number.isNaN(date.getTime())) return '';
+  const beijing = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+  return [
+    beijing.getUTCFullYear(),
+    pad(beijing.getUTCMonth() + 1),
+    pad(beijing.getUTCDate()),
+  ].join('-') + ' ' + [
+    pad(beijing.getUTCHours()),
+    pad(beijing.getUTCMinutes()),
+  ].join(':');
+};
+
 Page({
   data: {
     loggedIn: false,
+    pendingDeletion: false,
+    deletionDueText: '',
+    deletionConfirming: false,
     loading: false,
     nickname: '',
     nicknameDraft: '',
@@ -43,10 +81,23 @@ Page({
   },
 
   onShow() {
-    const loggedIn = Boolean(wx.getStorageSync('token'))
-      && !wx.getStorageSync('manualLogout');
-    this.setData({ loggedIn });
+    const manualLogout = wx.getStorageSync('manualLogout') === true;
+    const pendingDeletion = !manualLogout
+      && wx.getStorageSync('accountStatus') === 'pending_deletion'
+      && Boolean(wx.getStorageSync('recoveryToken'));
+    const loggedIn = !manualLogout && (
+      Boolean(wx.getStorageSync('token')) || pendingDeletion
+    );
+    this.setData({
+      loggedIn,
+      pendingDeletion,
+      deletionDueText: pendingDeletion
+        ? formatDeletionDueAt(wx.getStorageSync('deletionDueAt'))
+        : '',
+      showProfilePrompt: pendingDeletion ? false : this.data.showProfilePrompt,
+    });
     if (!loggedIn) return Promise.resolve();
+    if (pendingDeletion) return Promise.resolve();
     return this.loadProfile();
   },
 
@@ -118,8 +169,17 @@ Page({
   onLogin() {
     this.setData({ loading: true });
     return session.login({ force: true })
-      .then(() => {
-        this.setData({ loggedIn: true });
+      .then(login => {
+        const pendingDeletion = login
+          && login.account_status === 'pending_deletion';
+        this.setData({
+          loggedIn: true,
+          pendingDeletion,
+          deletionDueText: pendingDeletion
+            ? formatDeletionDueAt(login.deletion_due_at)
+            : '',
+        });
+        if (pendingDeletion) return null;
         return this.loadProfile();
       })
       .catch(() => wx.showToast({ title: '登录失败，请重试', icon: 'none' }))
@@ -231,9 +291,129 @@ Page({
     wx.switchTab({ url: '/pages/questions/questions' });
   },
 
+  onGetPhoneNumber(e) {
+    const code = e && e.detail && e.detail.code;
+    if (!code) {
+      wx.showToast({ title: '未获得手机号授权', icon: 'none' });
+      return Promise.resolve();
+    }
+    this.setData({ loading: true });
+    return api.bindPhone(code)
+      .then(result => {
+        this.setData({
+          phoneBound: true,
+          phoneMasked: result.phone_masked || '',
+        });
+        wx.setStorageSync('phoneBound', true);
+        wx.setStorageSync('phoneMasked', result.phone_masked || '');
+        wx.showToast({ title: '手机号已绑定', icon: 'success' });
+      })
+      .catch(error => this.handlePhoneConflict(error))
+      .finally(() => this.setData({ loading: false }));
+  },
+
+  handlePhoneConflict(error) {
+    const detail = getErrorDetail(error);
+    if (detail.code === 'account_recovery_available') {
+      return showModal({
+        title: '发现已有账户',
+        content: detail.message || '该手机号关联了已有账户，是否恢复原账户？',
+        confirmText: '恢复账户',
+        cancelText: '暂不恢复',
+      }).then(result => {
+        if (!result.confirm) return null;
+        return api.recoverAccount(detail.recovery_token)
+          .then(login => {
+            session.storeLogin(login);
+            this.setData({ pendingDeletion: false });
+            return this.loadProfile();
+          });
+      }).catch(() => {
+        wx.showToast({ title: '账户恢复失败，请重试', icon: 'none' });
+      });
+    }
+    if (detail.code === 'account_merge_required') {
+      const reference = detail.support_reference
+        ? `\n处理编号：${detail.support_reference}`
+        : '';
+      return showModal({
+        title: '需要人工合并',
+        content: `${detail.message || '两个账户均有学习数据，请联系支持处理'}${reference}`,
+        showCancel: false,
+        confirmText: '我知道了',
+      });
+    }
+    wx.showToast({ title: error.message || '手机号绑定失败', icon: 'none' });
+    return Promise.resolve();
+  },
+
   onLogout() {
+    return api.logoutAccount()
+      .catch(() => null)
+      .finally(() => {
+        session.logoutLocal({ manual: true, redirect: true });
+      });
+  },
+
+  onRequestDeletion() {
+    if (this.data.loading || this.data.deletionConfirming) return Promise.resolve();
+    this.setData({ deletionConfirming: true });
+    return showModal({
+      title: '申请注销账户？',
+      content: '注销后将退出错题本，账户和学习数据会在保留期内暂存。在此期间可随时恢复。',
+      confirmText: '继续注销',
+      confirmColor: '#c8453d',
+      cancelText: '取消',
+    }).then(first => {
+      if (!first.confirm) return null;
+      return showModal({
+        title: '再次确认注销',
+        content: '保留期结束后，账户、错题、练习和头像将被永久删除，且无法恢复。',
+        confirmText: '确认注销',
+        confirmColor: '#c8453d',
+        cancelText: '我再想想',
+      });
+    }).then(second => {
+      if (!second || !second.confirm) return null;
+      this.setData({ loading: true });
+      return session.getFreshLoginCode()
+        .then(code => api.requestAccountDeletion(code))
+        .then(result => {
+          session.storePendingDeletion(result);
+          this.setData({
+            loggedIn: true,
+            pendingDeletion: true,
+            deletionDueText: formatDeletionDueAt(result.deletion_due_at),
+            showProfilePrompt: false,
+          });
+        })
+        .catch(() => {
+          wx.showToast({ title: '注销申请失败，请重试', icon: 'none' });
+        })
+        .finally(() => this.setData({ loading: false }));
+    }).finally(() => this.setData({ deletionConfirming: false }));
+  },
+
+  onRecoverDeletion() {
+    if (this.data.loading) return Promise.resolve();
+    this.setData({ loading: true });
+    return api.recoverDeletedAccount()
+      .then(login => {
+        session.storeLogin(login);
+        this.setData({
+          pendingDeletion: false,
+          deletionDueText: '',
+        });
+        return this.loadProfile();
+      })
+      .then(() => wx.showToast({ title: '账户已恢复', icon: 'success' }))
+      .catch(() => wx.showToast({ title: '账户恢复失败，请重试', icon: 'none' }))
+      .finally(() => this.setData({ loading: false }));
+  },
+
+  onExitPendingAccount() {
     session.logoutLocal({ manual: true, redirect: true });
   },
 });
 
-module.exports = { getBeijingMonthStart };
+module.exports = { getBeijingMonthStart, formatDeletionDueAt };

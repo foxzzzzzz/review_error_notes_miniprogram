@@ -24,6 +24,10 @@ test('API wrapper exposes the complete backend route contract', async () => {
 
   await api.login('login-code');
   await api.bindPhone('phone-code');
+  await api.recoverAccount('recovery-token');
+  await api.logoutAccount();
+  await api.requestAccountDeletion('fresh-login-code');
+  await api.recoverDeletedAccount();
   await api.uploadImage('/tmp/a.jpg');
   await api.listQuestions();
   await api.getQuestion('question-id');
@@ -43,6 +47,10 @@ test('API wrapper exposes the complete backend route contract', async () => {
   assert.deepEqual(calls, [
     { method: 'POST', path: '/api/auth/login' },
     { method: 'POST', path: '/api/auth/bind-phone' },
+    { method: 'POST', path: '/api/auth/recover-account' },
+    { method: 'POST', path: '/api/account/logout' },
+    { method: 'POST', path: '/api/account/deletion' },
+    { method: 'POST', path: '/api/account/deletion/recover' },
     { method: 'POST', path: '/api/upload/image' },
     { method: 'GET', path: '/api/questions' },
     { method: 'GET', path: '/api/questions/question-id' },

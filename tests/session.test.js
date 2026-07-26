@@ -81,6 +81,105 @@ test('manual logout suppresses automatic login until login is forced', async () 
   assert.equal(storage.get('manualLogout'), false);
 });
 
+test('pending-deletion login stores only the recovery session', async () => {
+  let requests = 0;
+  const { session, storage } = loadSession({
+    request(options) {
+      requests += 1;
+      options.success({
+        statusCode: 200,
+        data: {
+          token: null,
+          recovery_token: 'recovery-token',
+          account_id: 'account-pending',
+          student_id: 'student-pending',
+          account_status: 'pending_deletion',
+          deletion_due_at: '2026-08-25T00:00:00Z',
+        },
+      });
+    },
+  });
+
+  const first = await session.login();
+  const cached = await session.login();
+
+  assert.equal(requests, 1);
+  assert.equal(first.recovery_token, 'recovery-token');
+  assert.equal(cached.recovery_token, 'recovery-token');
+  assert.equal(storage.has('token'), false);
+  assert.equal(storage.get('recoveryToken'), 'recovery-token');
+  assert.equal(storage.get('accountStatus'), 'pending_deletion');
+  assert.equal(storage.get('deletionDueAt'), '2026-08-25T00:00:00Z');
+});
+
+test('restoring an active login clears recovery-only state', () => {
+  const { session, storage } = loadSession();
+  storage.set('recoveryToken', 'old-recovery-token');
+  storage.set('deletionDueAt', '2026-08-25T00:00:00Z');
+
+  session.storeLogin({
+    token: 'normal-token',
+    account_id: 'account-active',
+    student_id: 'student-active',
+    account_status: 'active',
+  });
+
+  assert.equal(storage.get('token'), 'normal-token');
+  assert.equal(storage.has('recoveryToken'), false);
+  assert.equal(storage.has('deletionDueAt'), false);
+  assert.equal(storage.get('accountStatus'), 'active');
+});
+
+test('fresh identity verification always invokes wx.login in development', async () => {
+  let loginCalls = 0;
+  const { session } = loadSession({
+    login(options) {
+      loginCalls += 1;
+      options.success({ code: 'temporary-wechat-code' });
+    },
+  });
+
+  const code = await session.getFreshLoginCode();
+
+  assert.equal(loginCalls, 1);
+  assert.equal(code, 'dev-local-account');
+});
+
+test('unauthorized retry preserves a pending-deletion recovery session', async () => {
+  let retries = 0;
+  let destination = '';
+  const { session, storage } = loadSession({
+    request(options) {
+      options.success({
+        statusCode: 200,
+        data: {
+          token: null,
+          recovery_token: 'pending-recovery-token',
+          account_id: 'pending-account',
+          student_id: 'pending-student',
+          account_status: 'pending_deletion',
+          deletion_due_at: '2026-08-25T00:00:00Z',
+        },
+      });
+    },
+    reLaunch({ url }) { destination = url; },
+  });
+
+  await assert.rejects(
+    session.retryAfterUnauthorized(() => {
+      retries += 1;
+      return Promise.resolve();
+    }),
+    error => error.code === 'account_pending_deletion'
+  );
+
+  assert.equal(retries, 0);
+  assert.equal(storage.get('recoveryToken'), 'pending-recovery-token');
+  assert.equal(storage.get('accountStatus'), 'pending_deletion');
+  assert.equal(storage.get('manualLogout'), false);
+  assert.equal(destination, '/pages/profile/profile');
+});
+
 test('unauthorized retry does not bypass a manual logout', async () => {
   let loginRequests = 0;
   let retries = 0;
@@ -173,12 +272,16 @@ test('failed retry clears all local account context and redirects', async () => 
 
   assert.deepEqual(removed, [
     'token',
+    'recoveryToken',
+    'deletionDueAt',
     'token',
+    'recoveryToken',
     'accountId',
     'studentId',
     'profilePromptRequired',
     'studentProfileRequired',
     'accountStatus',
+    'deletionDueAt',
   ]);
   assert.equal(relaunched, true);
 });
@@ -194,6 +297,7 @@ function loadProfilePage({ profile = {}, logoutLocal = () => {}, apiOverrides = 
       getProfile: () => Promise.resolve(profile),
       updateProfile: () => Promise.resolve(),
       skipProfilePrompt: () => Promise.resolve(profile),
+      logoutAccount: () => Promise.resolve({ ok: true }),
       uploadAvatar: () => Promise.resolve(profile),
       downloadAvatar: () => Promise.resolve('wxfile://avatar.jpg'),
       resolveServerUrl: value => value,
@@ -211,15 +315,44 @@ function loadProfilePage({ profile = {}, logoutLocal = () => {}, apiOverrides = 
   return definition;
 }
 
-test('profile page delegates manual logout to the session module', () => {
+test('profile page audits logout before clearing the local session', async () => {
+  let auditCalls = 0;
   let logoutOptions;
   const definition = loadProfilePage({
     profile: {},
     logoutLocal: options => { logoutOptions = options; },
+    apiOverrides: {
+      logoutAccount() {
+        auditCalls += 1;
+        return Promise.resolve({ ok: true });
+      },
+    },
   });
 
   try {
-    definition.onLogout();
+    await definition.onLogout();
+    assert.equal(auditCalls, 1);
+    assert.deepEqual(logoutOptions, { manual: true, redirect: true });
+  } finally {
+    delete global.Page;
+    delete require.cache[profilePath];
+    delete require.cache[apiPath];
+    delete require.cache[sessionPath];
+  }
+});
+
+test('profile page clears the local session when logout audit fails', async () => {
+  let logoutOptions;
+  const definition = loadProfilePage({
+    profile: {},
+    logoutLocal: options => { logoutOptions = options; },
+    apiOverrides: {
+      logoutAccount: () => Promise.reject(new Error('offline')),
+    },
+  });
+
+  try {
+    await definition.onLogout();
     assert.deepEqual(logoutOptions, { manual: true, redirect: true });
   } finally {
     delete global.Page;

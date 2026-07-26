@@ -8,6 +8,8 @@ let loginPromise = null;
 
 const storeLogin = (data) => {
   wx.setStorageSync('token', data.token);
+  wx.removeStorageSync('recoveryToken');
+  wx.removeStorageSync('deletionDueAt');
   wx.setStorageSync('accountId', data.account_id);
   wx.setStorageSync('studentId', data.student_id);
   wx.setStorageSync('profilePromptRequired', data.profile_prompt_required === true);
@@ -17,13 +19,28 @@ const storeLogin = (data) => {
   return data;
 };
 
+const storePendingDeletion = (data) => {
+  wx.removeStorageSync('token');
+  wx.setStorageSync('recoveryToken', data.recovery_token);
+  wx.setStorageSync('accountId', data.account_id || wx.getStorageSync('accountId'));
+  wx.setStorageSync('studentId', data.student_id || wx.getStorageSync('studentId'));
+  wx.setStorageSync('accountStatus', 'pending_deletion');
+  wx.setStorageSync('deletionDueAt', data.deletion_due_at || '');
+  wx.setStorageSync('profilePromptRequired', false);
+  wx.setStorageSync('studentProfileRequired', false);
+  wx.setStorageSync('manualLogout', false);
+  return data;
+};
+
 const clearSession = () => {
   wx.removeStorageSync('token');
+  wx.removeStorageSync('recoveryToken');
   wx.removeStorageSync('accountId');
   wx.removeStorageSync('studentId');
   wx.removeStorageSync('profilePromptRequired');
   wx.removeStorageSync('studentProfileRequired');
   wx.removeStorageSync('accountStatus');
+  wx.removeStorageSync('deletionDueAt');
 };
 
 const requestLogin = (path, code) => new Promise((resolve, reject) => {
@@ -34,7 +51,11 @@ const requestLogin = (path, code) => new Promise((resolve, reject) => {
     header: { 'Content-Type': 'application/json' },
     success(res) {
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        resolve(storeLogin(res.data));
+        resolve(
+          res.data.account_status === 'pending_deletion'
+            ? storePendingDeletion(res.data)
+            : storeLogin(res.data)
+        );
         return;
       }
       reject(new Error('登录失败'));
@@ -70,6 +91,20 @@ const login = ({ force = false } = {}) => {
       account_status: wx.getStorageSync('accountStatus') || '',
     });
   }
+  if (
+    !force
+    && wx.getStorageSync('accountStatus') === 'pending_deletion'
+    && wx.getStorageSync('recoveryToken')
+  ) {
+    return Promise.resolve({
+      token: null,
+      recovery_token: wx.getStorageSync('recoveryToken'),
+      account_id: wx.getStorageSync('accountId'),
+      student_id: wx.getStorageSync('studentId'),
+      account_status: 'pending_deletion',
+      deletion_due_at: wx.getStorageSync('deletionDueAt') || '',
+    });
+  }
   if (loginPromise) return loginPromise;
 
   loginPromise = (
@@ -81,6 +116,19 @@ const login = ({ force = false } = {}) => {
   });
   return loginPromise;
 };
+
+const getFreshLoginCode = () => new Promise((resolve, reject) => {
+  wx.login({
+    success(res) {
+      if (!res.code) {
+        reject(new Error('身份验证失败'));
+        return;
+      }
+      resolve(DEV_MODE ? DEV_LOGIN_IDENTITY : res.code);
+    },
+    fail: reject,
+  });
+});
 
 const logoutLocal = ({ manual = true, redirect = true } = {}) => {
   clearSession();
@@ -98,9 +146,16 @@ const retryAfterUnauthorized = async (runRequest) => {
   }
   wx.removeStorageSync('token');
   try {
-    await login({ force: true });
+    const loginResult = await login({ force: true });
+    if (loginResult && loginResult.account_status === 'pending_deletion') {
+      wx.reLaunch({ url: '/pages/profile/profile' });
+      const error = new Error('account pending deletion');
+      error.code = 'account_pending_deletion';
+      throw error;
+    }
     return await runRequest();
   } catch (error) {
+    if (error.code === 'account_pending_deletion') throw error;
     logoutLocal({ manual: false, redirect: true });
     throw error;
   }
@@ -110,4 +165,7 @@ module.exports = {
   login,
   retryAfterUnauthorized,
   logoutLocal,
+  storeLogin,
+  storePendingDeletion,
+  getFreshLoginCode,
 };

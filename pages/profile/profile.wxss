@@ -11,7 +11,8 @@ page {
 
 .identity-card,
 .section,
-.logged-out-card {
+.logged-out-card,
+.pending-card {
   background: #ffffff;
   border-radius: 28rpx;
   box-shadow: 0 8rpx 28rpx rgba(31, 51, 34, 0.05);
@@ -130,6 +131,24 @@ page {
   font-size: 23rpx;
 }
 
+.phone-button {
+  min-width: 164rpx;
+  height: 64rpx;
+  margin: 0;
+  padding: 0 22rpx;
+  border: 1rpx solid #b9dfc0;
+  border-radius: 32rpx;
+  background: #eef8ef;
+  color: #188d38;
+  font-size: 24rpx;
+  line-height: 62rpx;
+}
+
+.phone-button::after,
+.pending-exit::after {
+  border: 0;
+}
+
 .setting-row,
 .account-row {
   min-height: 108rpx;
@@ -201,10 +220,90 @@ page {
   font-size: 28rpx;
 }
 
+.danger-zone {
+  min-height: 108rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #edf0eb;
+}
+
+.danger-label {
+  color: #8e3d38;
+  font-size: 29rpx;
+  font-weight: 560;
+}
+
+.danger-action {
+  padding: 12rpx 18rpx;
+  color: #c8453d;
+  font-size: 25rpx;
+}
+
+.action-disabled {
+  opacity: 0.45;
+}
+
 .logged-out-card {
   margin-top: 140rpx;
   padding: 64rpx 42rpx 46rpx;
   text-align: center;
+}
+
+.pending-card {
+  margin-top: 96rpx;
+  padding: 54rpx 38rpx 34rpx;
+  text-align: center;
+}
+
+.pending-mark {
+  width: 112rpx;
+  height: 112rpx;
+  margin: 0 auto 28rpx;
+  border-radius: 50%;
+  background: #fff2d8;
+  color: #9a6416;
+  font-size: 48rpx;
+  font-weight: 750;
+  line-height: 112rpx;
+}
+
+.pending-title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.pending-copy {
+  margin-top: 18rpx;
+  color: #747a71;
+  font-size: 25rpx;
+  line-height: 1.7;
+}
+
+.pending-deadline {
+  margin: 30rpx 0;
+  padding: 22rpx;
+  border-radius: 18rpx;
+  background: #fff8e9;
+  color: #8a765a;
+  font-size: 23rpx;
+}
+
+.pending-deadline text {
+  display: block;
+  margin-top: 8rpx;
+  color: #5f4a2e;
+  font-size: 28rpx;
+  font-weight: 650;
+}
+
+.pending-exit {
+  margin-top: 12rpx;
+  background: transparent;
+  color: #858b82;
+  font-size: 27rpx;
 }
 
 .logged-out-mark {

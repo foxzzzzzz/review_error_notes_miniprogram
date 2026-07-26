@@ -6,6 +6,18 @@
     <button class="primary-button" loading="{{loading}}" bindtap="onLogin">微信登录</button>
   </view>
 
+  <view wx:elif="{{pendingDeletion}}" class="pending-card">
+    <view class="pending-mark">留</view>
+    <view class="pending-title">账户正在保留期</view>
+    <view class="pending-copy">当前账户已申请注销，学习数据暂时保留。恢复账户后可继续使用错题与练习记录。</view>
+    <view wx:if="{{deletionDueText}}" class="pending-deadline">
+      预计永久删除时间（北京时间）
+      <text>{{deletionDueText}}</text>
+    </view>
+    <button class="primary-button" loading="{{loading}}" disabled="{{loading}}" bindtap="onRecoverDeletion">恢复账户</button>
+    <button class="pending-exit" disabled="{{loading}}" bindtap="onExitPendingAccount">退出，不恢复</button>
+  </view>
+
   <block wx:else>
     <view class="identity-card">
       <button class="avatar-button" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
@@ -76,13 +88,28 @@
           <view class="setting-label">手机号</view>
           <view class="setting-help">{{phoneBound ? phoneMasked : '用于账户恢复与数据合并'}}</view>
         </view>
-        <view class="future-pill">{{phoneBound ? '已绑定' : '后续开放'}}</view>
+        <view wx:if="{{phoneBound}}" class="future-pill">已绑定</view>
+        <button
+          wx:else
+          class="phone-button"
+          open-type="getPhoneNumber"
+          loading="{{loading}}"
+          disabled="{{loading}}"
+          bindgetphonenumber="onGetPhoneNumber"
+        >绑定手机号</button>
       </view>
       <view class="logout-row" bindtap="onLogout">退出当前账户</view>
+      <view class="danger-zone">
+        <view>
+          <view class="danger-label">注销账户</view>
+          <view class="setting-help">申请后进入可恢复保留期</view>
+        </view>
+        <view class="danger-action {{deletionConfirming ? 'action-disabled' : ''}}" bindtap="onRequestDeletion">申请注销</view>
+      </view>
     </view>
   </block>
 
-  <view wx:if="{{showProfilePrompt}}" class="prompt-mask">
+  <view wx:if="{{showProfilePrompt && !pendingDeletion}}" class="prompt-mask">
     <view class="prompt-card">
       <view class="prompt-title">完善你的账户资料</view>
       <view class="prompt-copy">头像和昵称仅用于错题本内展示，也可以稍后再设置</view>
