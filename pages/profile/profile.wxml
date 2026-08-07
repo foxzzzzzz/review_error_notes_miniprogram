@@ -91,20 +91,34 @@
         <view wx:if="{{phoneBound}}" class="future-pill">已绑定</view>
         <button
           wx:else
-          class="phone-button"
+          class="account-action phone-button"
           open-type="getPhoneNumber"
           loading="{{loading}}"
           disabled="{{loading}}"
           bindgetphonenumber="onGetPhoneNumber"
         >绑定手机号</button>
       </view>
-      <view class="logout-row" bindtap="onLogout">退出当前账户</view>
-      <view class="danger-zone">
+      <view class="account-row">
+        <view>
+          <view class="setting-label">退出登录</view>
+          <view class="setting-help">退出后可使用当前微信重新登录</view>
+        </view>
+        <button
+          class="account-action logout-action"
+          disabled="{{loading}}"
+          bindtap="onLogout"
+        >退出登录</button>
+      </view>
+      <view class="account-row danger-zone">
         <view>
           <view class="danger-label">注销账户</view>
           <view class="setting-help">申请后进入可恢复保留期</view>
         </view>
-        <view class="danger-action {{deletionConfirming ? 'action-disabled' : ''}}" bindtap="onRequestDeletion">申请注销</view>
+        <button
+          class="account-action danger-action {{deletionConfirming ? 'action-disabled' : ''}}"
+          disabled="{{deletionConfirming}}"
+          bindtap="onRequestDeletion"
+        >申请注销</button>
       </view>
     </view>
   </block>

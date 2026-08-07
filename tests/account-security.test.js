@@ -110,6 +110,50 @@ test('phone authorization sends only the one-time code', async () => {
   }
 });
 
+test('phone authorization failures expose an actionable reason', () => {
+  assert.equal(
+    profileModule.phoneAuthorizationMessage(
+      'getPhoneNumber:fail user deny'
+    ),
+    '已取消手机号授权'
+  );
+  assert.equal(
+    profileModule.phoneAuthorizationMessage(
+      'getPhoneNumber:fail no permission'
+    ),
+    '当前小程序未开通手机号能力'
+  );
+  assert.equal(
+    profileModule.phoneAuthorizationMessage(
+      'getPhoneNumber:fail api not supported'
+    ),
+    '当前微信环境不支持手机号授权'
+  );
+  assert.equal(
+    profileModule.phoneAuthorizationMessage(''),
+    '手机号授权失败，请稍后重试'
+  );
+});
+
+test('account security actions use consistent right-side outline buttons', () => {
+  const template = fs.readFileSync(
+    path.resolve(__dirname, '..', 'pages', 'profile', 'profile.wxml'),
+    'utf8'
+  );
+
+  assert.match(
+    template,
+    /class="account-action logout-action"[\s\S]*bindtap="onLogout"/
+  );
+  assert.match(
+    template,
+    /class="account-action danger-action[^"]*"[\s\S]*bindtap="onRequestDeletion"/
+  );
+  assert.ok(
+    template.indexOf('logout-action') < template.indexOf('danger-action')
+  );
+});
+
 test('recoverable phone conflict requires confirmation before replacing the session', async () => {
   let recoveredToken;
   let storedLogin;

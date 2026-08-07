@@ -131,22 +131,31 @@ page {
   font-size: 23rpx;
 }
 
-.phone-button {
+.account-action {
   min-width: 164rpx;
   height: 64rpx;
   margin: 0;
   padding: 0 22rpx;
-  border: 1rpx solid #b9dfc0;
   border-radius: 32rpx;
-  background: #eef8ef;
-  color: #188d38;
   font-size: 24rpx;
   line-height: 62rpx;
 }
 
-.phone-button::after,
+.account-action::after,
 .pending-exit::after {
   border: 0;
+}
+
+.phone-button {
+  border: 1rpx solid #b9dfc0;
+  background: #eef8ef;
+  color: #188d38;
+}
+
+.logout-action {
+  border: 1rpx solid #d9ddd7;
+  background: #ffffff;
+  color: #656b63;
 }
 
 .setting-row,
@@ -211,23 +220,8 @@ page {
   font-size: 24rpx;
 }
 
-.logout-row {
-  margin-top: 8rpx;
-  padding: 28rpx 0 4rpx;
-  border-top: 1rpx solid #edf0eb;
-  color: #d34c45;
-  text-align: center;
-  font-size: 28rpx;
-}
-
 .danger-zone {
-  min-height: 108rpx;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 24rpx;
-  padding-top: 24rpx;
-  border-top: 1rpx solid #edf0eb;
+  padding-bottom: 0;
 }
 
 .danger-label {
@@ -237,9 +231,9 @@ page {
 }
 
 .danger-action {
-  padding: 12rpx 18rpx;
+  border: 1rpx solid #e8b8b4;
+  background: #fff8f7;
   color: #c8453d;
-  font-size: 25rpx;
 }
 
 .action-disabled {

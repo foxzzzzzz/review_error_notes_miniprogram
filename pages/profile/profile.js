@@ -31,6 +31,20 @@ const getErrorDetail = error => (
     : {}
 );
 
+const phoneAuthorizationMessage = (errMsg = '') => {
+  const message = String(errMsg).toLowerCase();
+  if (message.includes('user deny') || message.includes('user cancel')) {
+    return '已取消手机号授权';
+  }
+  if (message.includes('no permission') || message.includes('permission denied')) {
+    return '当前小程序未开通手机号能力';
+  }
+  if (message.includes('not support')) {
+    return '当前微信环境不支持手机号授权';
+  }
+  return '手机号授权失败，请稍后重试';
+};
+
 const formatDeletionDueAt = value => {
   if (!value) return '';
   const text = String(value);
@@ -292,9 +306,14 @@ Page({
   },
 
   onGetPhoneNumber(e) {
-    const code = e && e.detail && e.detail.code;
+    const detail = e && e.detail ? e.detail : {};
+    const code = detail.code;
     if (!code) {
-      wx.showToast({ title: '未获得手机号授权', icon: 'none' });
+      console.warn('[getPhoneNumber] authorization failed', detail);
+      wx.showToast({
+        title: phoneAuthorizationMessage(detail.errMsg),
+        icon: 'none',
+      });
       return Promise.resolve();
     }
     this.setData({ loading: true });
@@ -416,4 +435,8 @@ Page({
   },
 });
 
-module.exports = { getBeijingMonthStart, formatDeletionDueAt };
+module.exports = {
+  getBeijingMonthStart,
+  formatDeletionDueAt,
+  phoneAuthorizationMessage,
+};
