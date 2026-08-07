@@ -38,8 +38,7 @@
 }
 
 .upload-item {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   align-items: center;
   padding: 12px;
   background: #fff;
@@ -48,13 +47,24 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.upload-page {
-  justify-self: start;
-  font-size: 14px;
+.upload-region {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
-.upload-status {
-  justify-self: center;
+.upload-page-region {
+  justify-content: flex-start;
+}
+
+.upload-status-region,
+.upload-subject-region {
+  justify-content: center;
+}
+
+.upload-page {
+  font-size: 14px;
 }
 
 .status {
@@ -79,12 +89,14 @@
 }
 
 .subject-tag {
+  height: 20px;
+  line-height: 20px;
+  box-sizing: border-box;
   color: #1aad19;
   font-size: 13px;
-  padding: 2px 8px;
+  padding: 0 8px;
   border: 1px solid #1aad19;
   border-radius: 4px;
-  justify-self: center;
   text-align: center;
 }
 

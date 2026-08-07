@@ -158,7 +158,7 @@ test('sheet history displays created_at in Beijing time', async () => {
   }
 });
 
-test('capture upload summary uses a centered three-column layout', () => {
+test('capture upload summary uses three equal flex regions with centered status and subject', () => {
   const wxml = fs.readFileSync(
     path.join(root, 'pages', 'capture', 'capture.wxml'),
     'utf8'
@@ -168,10 +168,27 @@ test('capture upload summary uses a centered three-column layout', () => {
     'utf8'
   );
 
-  assert.match(wxml, /class="upload-page"/);
-  assert.match(wxml, /class="status upload-status status-\{\{item\.status\}\}"/);
-  assert.match(wxss, /\.upload-item\s*\{[^}]*display:\s*grid;/s);
-  assert.match(wxss, /grid-template-columns:\s*repeat\(3,\s*1fr\);/);
-  assert.match(wxss, /\.upload-status\s*\{[^}]*justify-self:\s*center;/s);
-  assert.match(wxss, /\.subject-tag\s*\{[^}]*justify-self:\s*center;/s);
+  assert.match(wxml, /class="upload-region upload-page-region"/);
+  assert.match(wxml, /class="upload-region upload-status-region"/);
+  assert.match(wxml, /class="upload-region upload-subject-region"/);
+  assert.match(wxss, /\.upload-item\s*\{[^}]*display:\s*flex;/s);
+  assert.match(wxss, /\.upload-region\s*\{[^}]*flex:\s*1;/s);
+  assert.match(wxss, /\.upload-status-region\s*,\s*\.upload-subject-region\s*\{[^}]*justify-content:\s*center;/s);
+});
+
+test('capture subject selector vertically centers selected and placeholder text', () => {
+  const wxml = fs.readFileSync(
+    path.join(root, 'pages', 'capture', 'capture.wxml'),
+    'utf8'
+  );
+  const wxss = fs.readFileSync(
+    path.join(root, 'pages', 'capture', 'capture.wxss'),
+    'utf8'
+  );
+
+  assert.match(wxml, /<view class="subject-tag"[^>]*>\s*\{\{item\.subject[\s\S]*点击选择科目[\s\S]*\}\}\s*<\/view>/);
+  assert.match(wxss, /\.subject-tag\s*\{[^}]*height:\s*20px;/s);
+  assert.match(wxss, /\.subject-tag\s*\{[^}]*line-height:\s*20px;/s);
+  assert.match(wxss, /\.subject-tag\s*\{[^}]*padding:\s*0 8px;/s);
+  assert.match(wxss, /\.subject-tag\s*\{[^}]*box-sizing:\s*border-box;/s);
 });
