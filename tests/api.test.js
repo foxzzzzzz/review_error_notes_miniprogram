@@ -121,6 +121,25 @@ test('image upload sends subject and school settings as form data', async () => 
 });
 
 
+test('image status wrappers request only the specified image IDs and retry one image', async () => {
+  const calls = [];
+  const api = loadApi({
+    request(options) {
+      calls.push(options);
+      options.success({ statusCode: 200, data: [] });
+    },
+  });
+
+  await api.getImageStatuses(['image-1', 'image-2']);
+  await api.retryImage('image-1');
+
+  assert.equal(calls[0].url.endsWith('/upload/images/status?image_ids=image-1&image_ids=image-2'), true);
+  assert.equal(calls[0].method, 'GET');
+  assert.equal(calls[1].url.endsWith('/upload/images/image-1/retry'), true);
+  assert.equal(calls[1].method, 'POST');
+});
+
+
 test('capture page does not submit an empty optional subject', () => {
   const source = fs.readFileSync(
     path.resolve(__dirname, '..', 'pages', 'capture', 'capture.js'),

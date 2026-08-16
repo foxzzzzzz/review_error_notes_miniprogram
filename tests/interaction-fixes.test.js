@@ -192,3 +192,13 @@ test('capture subject selector vertically centers selected and placeholder text'
   assert.match(wxss, /\.subject-tag\s*\{[^}]*padding:\s*0 8px;/s);
   assert.match(wxss, /\.subject-tag\s*\{[^}]*box-sizing:\s*border-box;/s);
 });
+
+
+test('capture provides a distinct style for the segmented recognition state', () => {
+  const wxss = fs.readFileSync(
+    path.join(root, 'pages', 'capture', 'capture.wxss'),
+    'utf8'
+  );
+
+  assert.match(wxss, /\.status-segmented\s*\{[^}]*color:\s*#1976d2;/s);
+});

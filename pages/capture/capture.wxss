@@ -37,6 +37,21 @@
   margin-bottom: 16px;
 }
 
+.batch-subject-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #f4fbf4;
+  border-radius: 8px;
+}
+
+.batch-subject-label {
+  color: #36513a;
+  font-size: 14px;
+}
+
 .upload-item {
   display: flex;
   align-items: center;
@@ -83,9 +98,37 @@
   background: #e3f2fd;
 }
 
+.status-segmented {
+  color: #1976d2;
+  background: #e3f2fd;
+}
+
 .status-confirmed {
   color: #388e3c;
   background: #e8f5e9;
+}
+
+.status-needs_review {
+  color: #8a6700;
+  background: #fff8d7;
+}
+
+.status-failed {
+  color: #c62828;
+  background: #ffebee;
+}
+
+.retry-btn {
+  margin: 0 0 0 6px;
+  padding: 0 6px;
+  color: #c62828;
+  background: transparent;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.retry-btn::after {
+  border: 0;
 }
 
 .subject-tag {

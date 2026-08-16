@@ -163,6 +163,17 @@ const uploadAvatar = (filePath, retried = false) => (
   })
 );
 
+const getImageStatuses = (imageIds) => {
+  const query = imageIds
+    .map(imageId => `image_ids=${encodeURIComponent(imageId)}`)
+    .join('&');
+  return request(`/upload/images/status?${query}`);
+};
+
+const retryImage = imageId => (
+  request(`/upload/images/${encodeURIComponent(imageId)}/retry`, { method: 'POST' })
+);
+
 const downloadAvatar = (path) => (
   new Promise((resolve, reject) => {
     wx.downloadFile({
@@ -202,6 +213,8 @@ module.exports = {
     authScope: 'recovery',
   }),
   uploadImage,
+  getImageStatuses,
+  retryImage,
   listQuestions: (params = {}) => {
     const qs = Object.keys(params)
       .filter(k => params[k] != null)

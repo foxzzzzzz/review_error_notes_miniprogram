@@ -15,16 +15,34 @@ Page({
     previewUrl: '',
     uploads: [],
     uploading: false,
+    batchSubject: null,
     subjectMap: { math: '数学', chinese: '语文', english: '英语' },
-    statusText: { pending: '待处理', processing: '识别中', confirmed: '完成', failed: '失败' },
+    statusText: {
+      pending: '排队处理中',
+      segmented: '识别处理中',
+      confirmed: '处理完成',
+      needs_review: '处理完成（待确认）',
+      failed: '处理异常',
+    },
   },
+  statusPollingTimer: null,
+  statusPollingGeneration: 0,
   onShow() {
     if (!wx.getStorageSync('token') || wx.getStorageSync('manualLogout')) {
       return Promise.resolve();
     }
     return api.getProfile()
-      .then(profile => this.applyStudentProfile(profile))
+      .then(profile => {
+        this.applyStudentProfile(profile);
+        return this.startStatusPolling();
+      })
       .catch(() => wx.showToast({ title: '学生设置加载失败', icon: 'none' }));
+  },
+  onHide() {
+    this.stopStatusPolling();
+  },
+  onUnload() {
+    this.stopStatusPolling();
   },
   applyStudentProfile(profile) {
     const gradeSet = Number.isInteger(profile.grade);
@@ -56,7 +74,7 @@ Page({
           id: Date.now() + '_' + i,
           path: f.tempFilePath,
           status: 'pending',
-          subject: null,
+          subject: this.data.batchSubject,
         }));
         this.setData({
           uploads: [...this.data.uploads, ...newUploads],
@@ -76,6 +94,81 @@ Page({
       },
     });
   },
+  onBatchSubjectTap() {
+    const subjects = ['math', 'chinese', 'english'];
+    const subjectNames = ['数学', '语文', '英语'];
+    wx.showActionSheet({
+      itemList: subjectNames,
+      success: (res) => {
+        const subject = subjects[res.tapIndex];
+        this.setData({
+          batchSubject: subject,
+          uploads: this.data.uploads.map(item => ({ ...item, subject })),
+        });
+      },
+    });
+  },
+  hasActiveImageStatuses() {
+    return this.data.uploads.some(item => (
+      item.imageId && (item.status === 'pending' || item.status === 'segmented')
+    ));
+  },
+  refreshImageStatuses() {
+    const activeImageIds = this.data.uploads
+      .filter(item => item.imageId && (item.status === 'pending' || item.status === 'segmented'))
+      .map(item => item.imageId);
+    if (!activeImageIds.length) return Promise.resolve([]);
+    return api.getImageStatuses(activeImageIds).then(statuses => {
+      const statusesById = new Map(statuses.map(item => [item.image_id, item]));
+      const uploads = this.data.uploads.map(item => {
+        const status = statusesById.get(item.imageId);
+        if (!status) return item;
+        return {
+          ...item,
+          status: status.status,
+          questionCount: status.question_count,
+          errorCode: status.error_code,
+          errorMessage: status.error_message,
+        };
+      });
+      this.setData({ uploads });
+      return statuses;
+    });
+  },
+  stopStatusPolling() {
+    this.statusPollingGeneration += 1;
+    if (this.statusPollingTimer) {
+      clearTimeout(this.statusPollingTimer);
+      this.statusPollingTimer = null;
+    }
+  },
+  startStatusPolling() {
+    this.stopStatusPolling();
+    const generation = this.statusPollingGeneration;
+    return this.refreshImageStatuses()
+      .catch(() => [])
+      .then(statuses => {
+        if (generation === this.statusPollingGeneration && this.hasActiveImageStatuses()) {
+          this.statusPollingTimer = setTimeout(() => this.startStatusPolling(), 3000);
+        }
+        return statuses;
+      });
+  },
+  onRetryTap(e) {
+    const index = e.currentTarget.dataset.index;
+    const image = this.data.uploads[index];
+    if (!image || !image.imageId || image.status !== 'failed') return Promise.resolve();
+    return api.retryImage(image.imageId).then(result => {
+      this.setData({
+        [`uploads[${index}].status`]: result.status,
+        [`uploads[${index}].errorCode`]: null,
+        [`uploads[${index}].errorMessage`]: null,
+      });
+      return this.startStatusPolling();
+    }).catch(() => {
+      wx.showToast({ title: '重试失败，请稍后再试', icon: 'none' });
+    });
+  },
   submitAll() {
     if (this.data.uploading) return Promise.resolve();
     if (!this.data.gradeSet || !this.data.semesterSet) {
@@ -92,7 +185,7 @@ Page({
     const uploads = this.data.uploads;
     const promises = [];
     for (let i = 0; i < uploads.length; i++) {
-      if (uploads[i].status === 'pending' || uploads[i].status === 'failed') {
+      if (!uploads[i].imageId && (uploads[i].status === 'pending' || uploads[i].status === 'failed')) {
         const idx = i;  // capture original index
         const metadata = {
           grade: this.data.gradeIndex + 1,
@@ -103,7 +196,7 @@ Page({
         promises.push(
           api.uploadImage(uploads[idx].path, metadata).then(result => {
             this.setData({
-              [`uploads[${idx}].status`]: 'confirmed',
+              [`uploads[${idx}].status`]: result.status || 'pending',
               [`uploads[${idx}].imageId`]: result.image_id,
             });
           }).catch(error => {
@@ -114,6 +207,7 @@ Page({
       }
     }
     return Promise.all(promises).then(() => {
+      this.startStatusPolling();
       wx.showToast({ title: '提交成功', icon: 'success' });
       this.setData({ uploading: false });
     }).catch(() => {
