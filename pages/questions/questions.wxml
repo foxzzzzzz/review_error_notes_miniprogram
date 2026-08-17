@@ -3,6 +3,13 @@
     <text>当前查看：{{entryFilterLabel}}</text>
     <text bindtap="onClearEntryFilter">清除</text>
   </view>
+  <view class="review-entry" bindtap="goToReview">
+    <view>
+      <text class="review-entry-title">待确认题目<text wx:if="{{reviewQuestionCount}}">（{{reviewQuestionCount}}）</text></text>
+      <text class="review-entry-copy">按原图分组审核，确认后才会进入错题库</text>
+    </view>
+    <text class="review-entry-arrow">›</text>
+  </view>
 
   <view class="filters">
     <input placeholder="搜索标签" bindconfirm="onSearch" />

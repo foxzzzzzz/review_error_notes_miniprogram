@@ -1,0 +1,34 @@
+<view class="review-page">
+  <view wx:if="{{loading}}" class="state">加载中...</view>
+  <view wx:elif="{{!currentGroup}}" class="state">暂时没有待确认题目</view>
+  <block wx:else>
+    <scroll-view scroll-x class="group-scroll">
+      <view class="group-tabs">
+        <text wx:for="{{groups}}" wx:key="image_id" data-index="{{index}}" bindtap="onGroupTap" class="group-tab {{activeIndex === index ? 'active' : ''}}">第{{index + 1}}张 · {{item.question_count}}题</text>
+      </view>
+    </scroll-view>
+    <view class="source-card" bindtap="previewOriginal">
+      <text class="source-title">同一张原图中的待确认题目</text>
+      <image wx:if="{{originalImagePath}}" class="original" src="{{originalImagePath}}" mode="widthFix" />
+      <text class="source-copy">点击查看整张原图，可放大对照全部题目</text>
+    </view>
+    <view class="bulk-actions">
+      <button data-decision="collect" bindtap="decideAll">全部收录为错题</button>
+      <button data-decision="ignore" bindtap="decideAll">全部不收录</button>
+    </view>
+    <view class="question-card" wx:for="{{currentGroup.questions}}" wx:key="id">
+      <image wx:if="{{item.cropImagePath}}" class="crop" src="{{item.cropImagePath}}" mode="widthFix" data-path="{{item.cropImagePath}}" bindtap="previewCrop" />
+      <button wx:elif="{{!item.cropLoading}}" class="load-crop" data-id="{{item.id}}" bindtap="loadCrop">查看题目裁剪图</button>
+      <text wx:else class="crop-loading">题目图片加载中...</text>
+      <text class="question-title">题目{{index + 1}}</text>
+      <text class="label">学生作答</text><text>{{item.ocr_text}}</text>
+      <text class="label">参考答案</text><text>{{item.ocr_answer || '暂无可靠答案'}}</text>
+      <text wx:if="{{item.ocr_raw_json.collection_reason}}" class="review-reason">待确认原因：{{item.ocr_raw_json.collection_reason}}</text>
+      <view class="decision-row">
+        <button class="{{item.decision === 'collect' ? 'selected collect' : ''}}" data-id="{{item.id}}" data-decision="collect" bindtap="onDecisionTap">收录为错题</button>
+        <button class="{{item.decision === 'ignore' ? 'selected ignore' : ''}}" data-id="{{item.id}}" data-decision="ignore" bindtap="onDecisionTap">不收录</button>
+      </view>
+    </view>
+    <button class="submit" loading="{{saving}}" disabled="{{saving}}" bindtap="submitGroup">确认本页决定</button>
+  </block>
+</view>

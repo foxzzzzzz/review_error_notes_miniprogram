@@ -2,6 +2,7 @@
   "pages": [
     "pages/capture/capture",
     "pages/questions/questions",
+    "pages/review-images/review-images",
     "pages/question-detail/detail",
     "pages/sheet/sheet",
     "pages/sheet-result/result",

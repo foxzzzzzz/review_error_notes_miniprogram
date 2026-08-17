@@ -20,6 +20,7 @@
       <view class="upload-region upload-status-region">
         <text class="status status-{{item.status}}">{{statusText[item.status]}}</text>
         <button wx:if="{{item.status === 'failed' && item.imageId}}" class="retry-btn" bindtap="onRetryTap" data-index="{{index}}">重试</button>
+        <button wx:if="{{item.status === 'needs_review' && item.imageId}}" class="retry-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">去确认</button>
       </view>
       <view class="upload-region upload-subject-region">
         <view class="subject-tag" bindtap="onSubjectTap" data-index="{{index}}">{{item.subject ? (subjectMap[item.subject] || item.subject) : '点击选择科目'}}</view>

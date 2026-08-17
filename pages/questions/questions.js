@@ -80,6 +80,7 @@ Page({
     selectedCount: 0,
     allLoadedSelected: false,
     deleting: false,
+    reviewQuestionCount: 0,
     subjectMap: { math: '数学', chinese: '语文', english: '英语' },
     subjectFilters: [
       { label: '全部', value: '' },
@@ -126,7 +127,25 @@ Page({
       offset: this.data.offset,
       hasMore: this.data.hasMore,
     } : null;
-    return this.load({ reset: true, restoreOnError });
+    return Promise.all([
+      this.load({ reset: true, restoreOnError }),
+      this.loadReviewSummary(),
+    ]).then(([result]) => result);
+  },
+  goToReview() {
+    wx.navigateTo({ url: '/pages/review-images/review-images' });
+  },
+  loadReviewSummary() {
+    if (typeof wx === 'undefined' || typeof wx.request !== 'function') {
+      return Promise.resolve();
+    }
+    return api.listReviewImages().then(groups => {
+      const reviewQuestionCount = groups.reduce(
+        (count, group) => count + (group.question_count || group.questions.length),
+        0
+      );
+      this.setData({ reviewQuestionCount });
+    }).catch(() => {});
   },
   load({ reset = false, restoreOnError = null } = {}) {
     if (this._isQuestionLoading) {

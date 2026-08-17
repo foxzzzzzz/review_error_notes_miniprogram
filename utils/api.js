@@ -223,6 +223,11 @@ module.exports = {
     return request('/questions' + (qs ? '?' + qs : ''));
   },
   getQuestion: (id) => request(`/questions/${id}`),
+  listReviewImages: () => request('/questions/review/images'),
+  decideImageReviews: (imageId, decisions) => request(
+    `/questions/review/images/${encodeURIComponent(imageId)}/decisions`,
+    { method: 'POST', data: { decisions } }
+  ),
   updateQuestion: (id, data) => request(`/questions/${id}`, { method: 'PATCH', data }),
   createSheet: (data) => request('/sheets', { method: 'POST', data }),
   listSheets: () => request('/sheets'),

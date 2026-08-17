@@ -19,6 +19,21 @@
   color: #7b8379;
 }
 
+.review-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff8e1;
+}
+
+.review-entry-title, .review-entry-copy { display: block; }
+.review-entry-title { color: #855f16; font-size: 14px; }
+.review-entry-copy { margin-top: 4px; color: #9a8659; font-size: 12px; }
+.review-entry-arrow { color: #a67c23; font-size: 24px; }
+
 .filters {
   display: flex;
   align-items: center;

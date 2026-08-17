@@ -169,6 +169,12 @@ Page({
       wx.showToast({ title: '重试失败，请稍后再试', icon: 'none' });
     });
   },
+  onReviewTap(e) {
+    const imageId = e.currentTarget.dataset.imageId;
+    wx.navigateTo({
+      url: `/pages/review-images/review-images${imageId ? `?imageId=${encodeURIComponent(imageId)}` : ''}`,
+    });
+  },
   submitAll() {
     if (this.data.uploading) return Promise.resolve();
     if (!this.data.gradeSet || !this.data.semesterSet) {
