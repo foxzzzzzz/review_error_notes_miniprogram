@@ -57,7 +57,13 @@ const request = (url, options = {}, retried = false) => {
         if (res.statusCode === 401) terminalUnauthorized();
         reject(new ApiError(errorMessage(res.data, res.statusCode), res.statusCode, res.data));
       },
-      fail: reject,
+      fail(error) {
+        const errMsg = String(error && error.errMsg ? error.errMsg : '');
+        const message = /timeout/i.test(errMsg)
+          ? '请求超时，后台可能仍在生成，请稍后查看历史错题集'
+          : '网络连接失败，请稍后重试';
+        reject(new ApiError(message, 0, error || null));
+      },
     });
   });
 };
@@ -231,6 +237,8 @@ module.exports = {
   updateQuestion: (id, data) => request(`/questions/${id}`, { method: 'PATCH', data }),
   createSheet: (data) => request('/sheets', { method: 'POST', data }),
   listSheets: () => request('/sheets'),
+  getSheetGeneration: (id) => request(`/sheets/${id}/generation`),
+  retrySheetGeneration: (id) => request(`/sheets/${id}/retry`, { method: 'POST' }),
   getSheetReview: (id) => request(`/sheets/${id}/review`),
   listSheetAttempts: (id) => request(`/sheets/${id}/attempts`),
   createSheetAttempt: (id, data) => (

@@ -1,5 +1,5 @@
 <view class="sheet-page">
-  <view class="config" wx:if="{{!generating}}">
+  <view class="config">
     <view class="title-row">
       <text>已选: {{selectedIds.length}} 道错题</text>
       <text class="link" bindtap="viewSelected">查看</text>
@@ -7,29 +7,48 @@
 
     <view class="field">
       <text class="label">卷子标题</text>
-      <input value="{{title}}" bindinput="onTitleInput" placeholder="输入标题" />
+      <input value="{{title}}" bindinput="onTitleInput" placeholder="输入标题" disabled="{{generating}}" />
     </view>
 
     <view class="field">
       <text class="label">每题衍生题数</text>
-      <radio-group bindchange="onDerivedCount">
-        <label><radio value="0" checked="{{derivedCount === 0}}" />0道（仅原题）</label>
-        <label><radio value="1" checked="{{derivedCount === 1}}" />1道</label>
-        <label><radio value="2" checked="{{derivedCount === 2}}" />2道</label>
-        <label><radio value="3" checked="{{derivedCount === 3}}" />3道</label>
+      <radio-group bindchange="onDerivedCount" disabled="{{generating}}">
+        <label><radio value="0" checked="{{derivedCount === 0}}" disabled="{{generating}}" />0道（仅原题）</label>
+        <label><radio value="1" checked="{{derivedCount === 1}}" disabled="{{generating}}" />1道</label>
+        <label><radio value="2" checked="{{derivedCount === 2}}" disabled="{{generating}}" />2道</label>
+        <label><radio value="3" checked="{{derivedCount === 3}}" disabled="{{generating}}" />3道</label>
       </radio-group>
     </view>
 
     <view class="field" wx:if="{{derivedCount > 0}}">
       <text class="label">难度递进</text>
-      <radio-group bindchange="onDifficulty">
-        <label><radio value="1" />+1</label>
-        <label><radio value="2" checked />+2</label>
-        <label><radio value="3" />+3</label>
+      <radio-group bindchange="onDifficulty" disabled="{{generating}}">
+        <label><radio value="1" disabled="{{generating}}" />+1</label>
+        <label><radio value="2" checked disabled="{{generating}}" />+2</label>
+        <label><radio value="3" disabled="{{generating}}" />+3</label>
       </radio-group>
     </view>
 
-    <button class="primary" bindtap="generate" disabled="{{selectedIds.length === 0}}">生成错题集</button>
+    <button class="primary" loading="{{generating}}" bindtap="generate" disabled="{{selectedIds.length === 0 || generating}}">
+      {{generating ? '正在生成' : '生成错题集'}}
+    </button>
+  </view>
+
+  <view class="generation-card {{activeGeneration.generation_status}}" wx:if="{{activeGeneration}}">
+    <text class="generation-title" wx:if="{{activeGeneration.generation_status === 'pending'}}">错题集已加入生成队列</text>
+    <text class="generation-title" wx:if="{{activeGeneration.generation_status === 'processing'}}">
+      正在生成衍生题 {{activeGeneration.progressText}}
+    </text>
+    <text class="generation-title success" wx:if="{{activeGeneration.generation_status === 'completed'}}">✅ 生成完成</text>
+    <text class="generation-title error" wx:if="{{activeGeneration.generation_status === 'failed'}}">生成失败</text>
+    <text class="generation-help" wx:if="{{activeGeneration.generation_status === 'pending' || activeGeneration.generation_status === 'processing'}}">
+      题目较多时需要较长时间，可离开当前页面，后台会继续生成
+    </text>
+    <text class="generation-error" wx:if="{{generationError}}">{{generationError}}</text>
+    <view class="generation-actions" wx:if="{{activeGeneration.generation_status === 'failed'}}">
+      <button size="mini" bindtap="retryGeneration" data-id="{{activeGeneration.id}}">重新生成</button>
+      <button size="mini" bindtap="adjustGeneration">调整配置</button>
+    </view>
   </view>
 
   <view class="result" wx:if="{{pdfUrl}}">
@@ -45,14 +64,19 @@
         <text class="history-title">📝 {{item.title || '错题集'}}</text>
         <text class="history-time">{{item.createdAtText}}</text>
         <view class="history-status">
+          <text>{{item.generationStatusText}}</text>
+          <block wx:if="{{item.generation_status === 'completed'}}">
           <text>{{item.practice_status === 'completed' ? '已完成' : '未练习'}}</text>
           <text wx:if="{{item.latest_accuracy !== null && item.latest_accuracy !== undefined}}">最近正确率 {{item.accuracyText}}</text>
           <text>已记录 {{item.attempt_count || 0}} 次</text>
+          </block>
+          <text class="generation-error" wx:if="{{item.generation_status === 'failed'}}">{{item.generation_error_message}}</text>
         </view>
       </view>
       <view class="history-actions">
-        <button size="mini" bindtap="openSheet" data-url="{{item.pdf_url}}">查看 PDF</button>
-        <button class="result-action" size="mini" bindtap="openResult" data-id="{{item.id}}">
+        <button wx:if="{{item.generation_status === 'failed'}}" size="mini" bindtap="retryGeneration" data-id="{{item.id}}">重新生成</button>
+        <button size="mini" bindtap="openSheet" data-url="{{item.pdf_url}}" disabled="{{item.generation_status !== 'completed'}}">查看 PDF</button>
+        <button class="result-action" size="mini" bindtap="openResult" data-id="{{item.id}}" disabled="{{item.generation_status !== 'completed'}}">
           {{item.practice_status === 'completed' ? '修改结果' : '记录结果'}}
         </button>
       </view>

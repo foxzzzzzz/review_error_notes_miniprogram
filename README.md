@@ -174,9 +174,9 @@ cd miniprogram
 # 1. 修改 project.config.json 中的 appid
 #    "appid": "wxYOUR_REAL_APPID"
 
-# 2. 修改 utils/api.js 中的后端地址
-#    const BASE_URL = 'https://your-server.com/api';
-#    const SERVER_BASE = 'https://your-server.com';  (sheet.js)
+# 2. 复制 utils/config.example.js 为 utils/config.js，并配置 SERVER_BASE
+#    SERVER_BASE: 'https://your-server.com'
+#    SHEET_GENERATION_POLL_INTERVAL_MS: 3000  # 错题集生成状态轮询间隔（毫秒）
 ```
 
 ### 微信开发者工具
@@ -218,6 +218,8 @@ cd miniprogram
 | DELETE | `/api/questions/{id}` | 删除错题 | ✅ |
 | POST | `/api/sheets` | 生成错题集 | ✅ |
 | GET | `/api/sheets` | 历史错题集列表 | ✅ |
+| GET | `/api/sheets/{id}/generation` | 查询后台生成状态与进度 | ✅ |
+| POST | `/api/sheets/{id}/retry` | 重新生成失败的错题集 | ✅ |
 
 ---
 

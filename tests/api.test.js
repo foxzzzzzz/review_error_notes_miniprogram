@@ -449,6 +449,40 @@ test('request retries once after 401 with a renewed session', async () => {
 });
 
 
+test('request converts a WeChat timeout into an actionable ApiError', async () => {
+  const api = loadApi({
+    request(options) {
+      options.fail({ errMsg: 'request:fail timeout' });
+    },
+  });
+
+  await assert.rejects(api.createSheet({ question_ids: ['question-id'] }), error => {
+    assert.equal(error.name, 'ApiError');
+    assert.equal(error.statusCode, 0);
+    assert.equal(error.message, '请求超时，后台可能仍在生成，请稍后查看历史错题集');
+    assert.equal(error.data.errMsg, 'request:fail timeout');
+    return true;
+  });
+});
+
+
+test('request converts other WeChat transport failures into a network ApiError', async () => {
+  const api = loadApi({
+    request(options) {
+      options.fail({ errMsg: 'request:fail network unavailable' });
+    },
+  });
+
+  await assert.rejects(api.listSheets(), error => {
+    assert.equal(error.name, 'ApiError');
+    assert.equal(error.statusCode, 0);
+    assert.equal(error.message, '网络连接失败，请稍后重试');
+    assert.equal(error.data.errMsg, 'request:fail network unavailable');
+    return true;
+  });
+});
+
+
 test('upload rejects non-2xx responses', async () => {
   const api = loadApi({
     uploadFile(options) {
