@@ -180,7 +180,12 @@ Page({
       .filter(item => item.imageId && isActiveStatus(item.status))
       .map(item => item.imageId);
     if (!activeImageIds.length) return Promise.resolve([]);
-    return api.getImageStatuses(activeImageIds).then(statuses => {
+    const statusBatches = [];
+    for (let index = 0; index < activeImageIds.length; index += 9) {
+      statusBatches.push(activeImageIds.slice(index, index + 9));
+    }
+    return Promise.all(statusBatches.map(api.getImageStatuses)).then(results => {
+      const statuses = results.flat();
       const statusesById = new Map(statuses.map(item => [item.image_id, item]));
       const updateUploadStatuses = uploads => uploads.map(item => {
         const status = statusesById.get(item.imageId);

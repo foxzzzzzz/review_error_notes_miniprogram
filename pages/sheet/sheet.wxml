@@ -75,8 +75,8 @@
       </view>
       <view class="history-actions">
         <button wx:if="{{item.generation_status === 'failed'}}" size="mini" bindtap="retryGeneration" data-id="{{item.id}}">重新生成</button>
-        <button wx:if="{{item.generation_status === 'completed'}}" size="mini" bindtap="shareSheet" data-url="{{item.pdf_url}}">分享 PDF</button>
-        <button size="mini" bindtap="openSheet" data-url="{{item.pdf_url}}" disabled="{{item.generation_status !== 'completed'}}">查看 PDF</button>
+        <button wx:if="{{item.generation_status === 'completed'}}" size="mini" bindtap="shareSheet" data-id="{{item.id}}">分享 PDF</button>
+        <button size="mini" bindtap="openSheet" data-id="{{item.id}}" disabled="{{item.generation_status !== 'completed'}}">查看 PDF</button>
         <button class="result-action" size="mini" bindtap="openResult" data-id="{{item.id}}" disabled="{{item.generation_status !== 'completed'}}">
           {{item.practice_status === 'completed' ? '修改结果' : '记录结果'}}
         </button>

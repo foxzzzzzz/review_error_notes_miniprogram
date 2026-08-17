@@ -180,10 +180,11 @@ const retryImage = imageId => (
   request(`/upload/images/${encodeURIComponent(imageId)}/retry`, { method: 'POST' })
 );
 
-const downloadAvatar = (path) => (
+const downloadAvatar = (_path) => (
   new Promise((resolve, reject) => {
     wx.downloadFile({
-      url: resolveServerUrl(path),
+      url: `${BASE_URL}/profile/avatar`,
+      header: { 'Authorization': `Bearer ${wx.getStorageSync('token') || ''}` },
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300 && res.tempFilePath) {
           resolve(res.tempFilePath);
@@ -197,6 +198,23 @@ const downloadAvatar = (path) => (
       fail() {
         reject(new ApiError('头像加载失败', 0));
       },
+    });
+  })
+);
+
+const downloadSheet = (sheetId) => (
+  new Promise((resolve, reject) => {
+    wx.downloadFile({
+      url: `${BASE_URL}/sheets/${encodeURIComponent(sheetId)}/pdf`,
+      header: { 'Authorization': `Bearer ${wx.getStorageSync('token') || ''}` },
+      success(res) {
+        if (res.statusCode >= 200 && res.statusCode < 300 && res.tempFilePath) {
+          resolve(res.tempFilePath);
+          return;
+        }
+        reject(new ApiError(`错题集加载失败 (${res.statusCode || 0})`, res.statusCode || 0));
+      },
+      fail() { reject(new ApiError('错题集加载失败', 0)); },
     });
   })
 );
@@ -256,6 +274,7 @@ module.exports = {
   skipProfilePrompt: () => request('/profile/prompt/skip', { method: 'POST' }),
   uploadAvatar,
   downloadAvatar,
+  downloadSheet,
   downloadQuestionImage,
   resolveServerUrl,
   ApiError,

@@ -234,25 +234,21 @@ Page({
   },
 
   preview() {
-    wx.downloadFile({
-      url: this.data.pdfUrl,
-      success: res => wx.openDocument({ filePath: res.tempFilePath, fileType: 'pdf' }),
-    });
+    return api.downloadSheet(this.data.activeGeneration.id)
+      .then(filePath => wx.openDocument({ filePath, fileType: 'pdf' }));
   },
 
-  sharePdf(url) {
-    wx.downloadFile({
-      url: api.resolveServerUrl(url),
-      success: res => wx.shareFileMessage({ filePath: res.tempFilePath, fileName: '错题集.pdf' }),
-    });
+  sharePdf(sheetId) {
+    return api.downloadSheet(sheetId)
+      .then(filePath => wx.shareFileMessage({ filePath, fileName: '错题集.pdf' }));
   },
 
   share() {
-    this.sharePdf(this.data.pdfUrl);
+    return this.sharePdf(this.data.activeGeneration.id);
   },
 
   shareSheet(e) {
-    this.sharePdf(e.currentTarget.dataset.url);
+    return this.sharePdf(e.currentTarget.dataset.id);
   },
 
   viewSelected() {
@@ -260,11 +256,8 @@ Page({
   },
 
   openSheet(e) {
-    const url = api.resolveServerUrl(e.currentTarget.dataset.url);
-    wx.downloadFile({
-      url,
-      success: res => wx.openDocument({ filePath: res.tempFilePath, fileType: 'pdf' }),
-    });
+    return api.downloadSheet(e.currentTarget.dataset.id)
+      .then(filePath => wx.openDocument({ filePath, fileType: 'pdf' }));
   },
 
   openResult(e) {

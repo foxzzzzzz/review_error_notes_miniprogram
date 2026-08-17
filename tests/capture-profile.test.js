@@ -389,6 +389,33 @@ test('capture refreshes a submitted image with its backend status', async () => 
   }
 });
 
+test('capture polls more than nine active images in API-sized batches', async () => {
+  const requestedIds = [];
+  global.wx = { setStorageSync() {} };
+  const definition = loadCapturePage({
+    getImageStatuses(ids) {
+      requestedIds.push(ids);
+      return Promise.resolve(ids.map(image_id => ({ image_id, status: 'segmented' })));
+    },
+  });
+  const uploads = Array.from({ length: 10 }, (_, index) => ({
+    id: `local-${index}`, imageId: `image-${index}`, status: 'pending', subject: 'math',
+  }));
+  const page = createCapturePage(definition, uploads);
+
+  try {
+    await page.refreshImageStatuses();
+
+    assert.deepEqual(requestedIds.map(ids => ids.length), [9, 1]);
+    assert.deepEqual(page.data.uploads.map(item => item.status), Array(10).fill('segmented'));
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
 
 test('capture retries a failed backend image without uploading it again', async () => {
   let retried = 0;

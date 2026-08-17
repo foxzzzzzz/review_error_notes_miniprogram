@@ -82,7 +82,8 @@ test('avatar download expands the server path and returns a temporary file', asy
 
   const result = await api.downloadAvatar('/avatars/account.jpg');
 
-  assert.equal(call.url, SERVER_BASE + '/avatars/account.jpg');
+  assert.equal(call.url, SERVER_BASE + '/api/profile/avatar');
+  assert.equal(call.header.Authorization, 'Bearer test-token');
   assert.equal(result, 'wxfile://avatar.jpg');
 });
 

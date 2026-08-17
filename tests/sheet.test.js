@@ -117,28 +117,23 @@ test('history exposes separate PDF and practice result actions', () => {
 
 
 test('history share downloads and shares the selected completed PDF', () => {
-  let downloadUrl;
   let shared;
   const page = loadSheetPage({
-    resolveServerUrl: value => `https://api.test${value}`,
-  });
-  global.wx = {
-    downloadFile(options) {
-      downloadUrl = options.url;
-      options.success({ tempFilePath: '/tmp/sheet.pdf' });
+    downloadSheet: sheetId => {
+      assert.equal(sheetId, 'sheet-1');
+      return Promise.resolve('/tmp/sheet.pdf');
     },
-    shareFileMessage(options) { shared = options; },
-  };
+  });
+  global.wx = { shareFileMessage(options) { shared = options; } };
   const context = createContext(page);
 
-  context.shareSheet({
-    currentTarget: { dataset: { url: '/pdfs/history.pdf' } },
-  });
-
-  assert.equal(downloadUrl, 'https://api.test/pdfs/history.pdf');
-  assert.deepEqual(shared, {
-    filePath: '/tmp/sheet.pdf',
-    fileName: '错题集.pdf',
+  return context.shareSheet({
+    currentTarget: { dataset: { id: 'sheet-1' } },
+  }).then(() => {
+    assert.deepEqual(shared, {
+      filePath: '/tmp/sheet.pdf',
+      fileName: '错题集.pdf',
+    });
   });
 });
 
@@ -360,6 +355,6 @@ test('sheet template keeps controls visible and renders all generation states', 
   assert.match(wxml, /重新生成/);
   assert.match(wxml, /调整配置/);
   assert.match(wxml, /wx:if="\{\{item\.generation_status === 'failed'\}\}"[^>]*bindtap="retryGeneration"[^>]*data-id="\{\{item\.id\}\}"/);
-  assert.match(wxml, /wx:if="\{\{item\.generation_status === 'completed'\}\}"[^>]*bindtap="shareSheet"[^>]*data-url="\{\{item\.pdf_url\}\}"/);
+  assert.match(wxml, /wx:if="\{\{item\.generation_status === 'completed'\}\}"[^>]*bindtap="shareSheet"[^>]*data-id="\{\{item\.id\}\}"/);
   assert.match(wxml, /disabled="\{\{item\.generation_status !== 'completed'\}\}"/);
 });
