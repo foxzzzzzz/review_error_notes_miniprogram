@@ -81,10 +81,17 @@ Page({
       .then(data => {
         const sheets = data.map(formatSheet);
         this.setData({ sheets });
-        const active = sheets.find(sheet => activeStatuses.has(sheet.generation_status));
+        const activeId = this.data.activeGeneration && this.data.activeGeneration.id;
+        const current = activeId
+          ? sheets.find(sheet => sheet.id === activeId)
+          : null;
+        const active = current
+          || sheets.find(sheet => activeStatuses.has(sheet.generation_status));
         if (active) {
           this.applyGenerationState(active);
-          this.startGenerationPolling(active.id);
+          if (activeStatuses.has(active.generation_status)) {
+            this.startGenerationPolling(active.id);
+          }
         }
         return sheets;
       })
@@ -233,11 +240,19 @@ Page({
     });
   },
 
-  share() {
+  sharePdf(url) {
     wx.downloadFile({
-      url: this.data.pdfUrl,
+      url: api.resolveServerUrl(url),
       success: res => wx.shareFileMessage({ filePath: res.tempFilePath, fileName: '错题集.pdf' }),
     });
+  },
+
+  share() {
+    this.sharePdf(this.data.pdfUrl);
+  },
+
+  shareSheet(e) {
+    this.sharePdf(e.currentTarget.dataset.url);
   },
 
   viewSelected() {

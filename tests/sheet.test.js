@@ -116,6 +116,33 @@ test('history exposes separate PDF and practice result actions', () => {
 });
 
 
+test('history share downloads and shares the selected completed PDF', () => {
+  let downloadUrl;
+  let shared;
+  const page = loadSheetPage({
+    resolveServerUrl: value => `https://api.test${value}`,
+  });
+  global.wx = {
+    downloadFile(options) {
+      downloadUrl = options.url;
+      options.success({ tempFilePath: '/tmp/sheet.pdf' });
+    },
+    shareFileMessage(options) { shared = options; },
+  };
+  const context = createContext(page);
+
+  context.shareSheet({
+    currentTarget: { dataset: { url: '/pdfs/history.pdf' } },
+  });
+
+  assert.equal(downloadUrl, 'https://api.test/pdfs/history.pdf');
+  assert.deepEqual(shared, {
+    filePath: '/tmp/sheet.pdf',
+    fileName: '错题集.pdf',
+  });
+});
+
+
 test('generate immediately shows a persistent pending state and ignores a second tap', async () => {
   let createCalls = 0;
   let resolveCreate;
@@ -258,6 +285,41 @@ test('onShow restores polling for an active sheet from history', async () => {
 });
 
 
+test('onShow reconciles a stale processing card with completed history', async () => {
+  const page = loadSheetPage({
+    listSheets: () => Promise.resolve([{
+      id: 'sheet-id',
+      title: '57题错题集',
+      created_at: '2026-08-17T09:48:00Z',
+      generation_status: 'completed',
+      generation_total: 57,
+      generation_completed: 57,
+      pdf_url: '/pdfs/sheet-id.pdf',
+    }]),
+  });
+  global.wx = {
+    getStorageSync: () => [],
+    showToast() {},
+  };
+  const context = createContext(page, {
+    generating: true,
+    activeGeneration: {
+      id: 'sheet-id',
+      generation_status: 'processing',
+      generation_total: 57,
+      generation_completed: 55,
+    },
+  });
+
+  await context.onShow();
+
+  assert.equal(context.data.activeGeneration.generation_status, 'completed');
+  assert.equal(context.data.activeGeneration.progressText, '57/57');
+  assert.equal(context.data.generating, false);
+  assert.equal(context.data.pdfUrl, '/pdfs/sheet-id.pdf');
+});
+
+
 test('failed generation remains visible and can be retried', async () => {
   let retriedId;
   const page = loadSheetPage({
@@ -298,5 +360,6 @@ test('sheet template keeps controls visible and renders all generation states', 
   assert.match(wxml, /重新生成/);
   assert.match(wxml, /调整配置/);
   assert.match(wxml, /wx:if="\{\{item\.generation_status === 'failed'\}\}"[^>]*bindtap="retryGeneration"[^>]*data-id="\{\{item\.id\}\}"/);
+  assert.match(wxml, /wx:if="\{\{item\.generation_status === 'completed'\}\}"[^>]*bindtap="shareSheet"[^>]*data-url="\{\{item\.pdf_url\}\}"/);
   assert.match(wxml, /disabled="\{\{item\.generation_status !== 'completed'\}\}"/);
 });
