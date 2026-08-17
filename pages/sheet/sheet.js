@@ -2,6 +2,7 @@ const api = require('../../utils/api');
 
 const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
 const pad = value => String(value).padStart(2, '0');
+const uniqueIds = ids => [...new Set(Array.isArray(ids) ? ids : [])];
 
 const formatBeijingDateTime = createdAt => {
   if (!createdAt) return '';
@@ -29,7 +30,7 @@ Page({
   },
 
   onShow() {
-    this.setData({ selectedIds: wx.getStorageSync('selectedIds') || [] });
+    this.setData({ selectedIds: uniqueIds(wx.getStorageSync('selectedIds')) });
     return api.listSheets()
       .then(data => this.setData({
         sheets: data.map(sheet => ({
@@ -48,7 +49,7 @@ Page({
     this.setData({ generating: true });
     api.createSheet({
       title: this.data.title || '错题重练',
-      question_ids: this.data.selectedIds,
+      question_ids: uniqueIds(this.data.selectedIds),
       derived_per_original: parseInt(this.data.derivedCount),
       difficulty_boost: parseInt(this.data.difficultyBoost),
     }).then(sheet => {

@@ -807,6 +807,41 @@ test('questions page preserves prior selections but clears all-loaded state when
   }
 });
 
+test('questions page does not retain a question repeated by a later page', async () => {
+  const api = require(apiPath);
+  const originalListQuestions = api.listQuestions;
+  const responses = [
+    Array.from({ length: 20 }, (_, index) => ({ id: `question-${index}` })),
+    [{ id: 'question-19' }, { id: 'question-20' }],
+  ];
+  let pageDefinition;
+
+  api.listQuestions = () => Promise.resolve(responses.shift());
+  global.Page = definition => { pageDefinition = definition; };
+  delete require.cache[pagePath];
+  require(pagePath);
+
+  const page = {
+    ...pageDefinition,
+    data: { ...pageDefinition.data },
+    setData(values) { Object.assign(this.data, values); },
+  };
+
+  try {
+    await page.load({ reset: true });
+    await page.load({ reset: false });
+    page.onToggleSelectAll();
+
+    assert.equal(page.data.questions.length, 21);
+    assert.equal(page.data.selectedIds.length, 21);
+    assert.equal(new Set(page.data.selectedIds).size, 21);
+  } finally {
+    api.listQuestions = originalListQuestions;
+    delete global.Page;
+    delete require.cache[pagePath];
+  }
+});
+
 test('questions page template provides horizontal filter rows, selection tools, time, and list states', () => {
   const template = fs.readFileSync(
     path.join(root, 'pages', 'questions', 'questions.wxml'),

@@ -63,6 +63,27 @@ test('generate sends zero derivatives by default', async () => {
 });
 
 
+test('generate removes duplicate question IDs left in selection storage', async () => {
+  let request;
+  const page = loadSheetPage({
+    createSheet: data => {
+      request = data;
+      return Promise.resolve({ pdf_url: '/pdfs/a.pdf' });
+    },
+  });
+  global.wx = { showToast() {} };
+  const context = {
+    data: { ...page.data, selectedIds: ['question-one', 'question-one', 'question-two'] },
+    setData(values) { Object.assign(this.data, values); },
+  };
+
+  page.generate.call(context);
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.deepEqual(request.question_ids, ['question-one', 'question-two']);
+});
+
+
 test('generate shows the actionable backend error', async () => {
   let toast;
   const page = loadSheetPage({

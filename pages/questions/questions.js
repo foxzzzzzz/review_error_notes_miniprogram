@@ -176,7 +176,13 @@ Page({
       if (requestGeneration !== this._requestGeneration) return;
 
       const addedQuestions = prepareQuestions(data);
-      const questions = reset ? addedQuestions : this.data.questions.concat(addedQuestions);
+      const seenQuestionIds = new Set();
+      const questions = (reset ? addedQuestions : this.data.questions.concat(addedQuestions))
+        .filter(question => {
+          if (seenQuestionIds.has(question.id)) return false;
+          seenQuestionIds.add(question.id);
+          return true;
+        });
       this.setData({
         questions,
         selectedIds: reset ? [] : this.data.selectedIds,
