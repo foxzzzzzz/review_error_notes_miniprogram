@@ -1,5 +1,26 @@
 const api = require('../../utils/api');
 
+const BACKGROUND_UPLOADS_KEY = 'captureBackgroundUploads';
+const isActiveStatus = status => ['pending', 'processing', 'segmented'].includes(status);
+const backgroundUploadsStorageKey = () => {
+  if (typeof wx === 'undefined' || typeof wx.getStorageSync !== 'function') {
+    return BACKGROUND_UPLOADS_KEY;
+  }
+  const studentId = wx.getStorageSync('studentId');
+  return studentId ? `${BACKGROUND_UPLOADS_KEY}:${studentId}` : BACKGROUND_UPLOADS_KEY;
+};
+const shouldKeepBackgroundUpload = upload => (
+  Boolean(upload.imageId) && upload.status !== 'confirmed'
+);
+
+const mergeBackgroundUploads = (existing, additions) => {
+  const byImageId = new Map(existing.map(item => [item.imageId, item]));
+  additions.forEach(item => {
+    if (shouldKeepBackgroundUpload(item)) byImageId.set(item.imageId, item);
+  });
+  return [...byImageId.values()].filter(shouldKeepBackgroundUpload);
+};
+
 Page({
   data: {
     gradeIndex: 0,
@@ -13,7 +34,10 @@ Page({
     grades: ['一年级','二年级','三年级','四年级','五年级','六年级'],
     semesters: ['上册','下册'],
     previewUrl: '',
+    previewUploadId: '',
     uploads: [],
+    backgroundUploads: [],
+    showBackgroundUploads: false,
     uploading: false,
     batchSubject: null,
     subjectMap: { math: '数学', chinese: '语文', english: '英语' },
@@ -28,6 +52,7 @@ Page({
   statusPollingTimer: null,
   statusPollingGeneration: 0,
   onShow() {
+    this.restoreBackgroundUploads();
     if (!wx.getStorageSync('token') || wx.getStorageSync('manualLogout')) {
       return Promise.resolve();
     }
@@ -43,6 +68,32 @@ Page({
   },
   onUnload() {
     this.stopStatusPolling();
+    this.persistBackgroundUploads();
+  },
+  restoreBackgroundUploads() {
+    const savedUploads = wx.getStorageSync(backgroundUploadsStorageKey());
+    if (!Array.isArray(savedUploads)) return;
+    this.setData({
+      backgroundUploads: mergeBackgroundUploads(
+        this.data.backgroundUploads,
+        savedUploads
+      ),
+    });
+  },
+  persistBackgroundUploads() {
+    if (typeof wx === 'undefined' || typeof wx.setStorageSync !== 'function') return;
+    wx.setStorageSync(
+      backgroundUploadsStorageKey(),
+      this.data.backgroundUploads.filter(shouldKeepBackgroundUpload)
+    );
+  },
+  moveSubmittedUploadsToBackground() {
+    const backgroundUploads = mergeBackgroundUploads(
+      this.data.backgroundUploads,
+      this.data.uploads.filter(item => item.imageId)
+    );
+    this.setData({ backgroundUploads });
+    this.persistBackgroundUploads();
   },
   applyStudentProfile(profile) {
     const gradeSet = Number.isInteger(profile.grade);
@@ -70,6 +121,7 @@ Page({
       mediaType: ['image'],
       sourceType: ['camera', 'album'],
       success: (res) => {
+        this.moveSubmittedUploadsToBackground();
         const newUploads = res.tempFiles.map((f, i) => ({
           id: Date.now() + '_' + i,
           path: f.tempFilePath,
@@ -77,11 +129,21 @@ Page({
           subject: this.data.batchSubject,
         }));
         this.setData({
-          uploads: [...this.data.uploads, ...newUploads],
+          uploads: newUploads,
           previewUrl: newUploads[0].path,
+          previewUploadId: newUploads[0].id,
         });
       },
     });
+  },
+  selectPreview(e) {
+    const id = e.currentTarget.dataset.id;
+    const upload = this.data.uploads.find(item => item.id === id);
+    if (!upload) return;
+    this.setData({ previewUrl: upload.path, previewUploadId: upload.id });
+  },
+  toggleBackgroundUploads() {
+    this.setData({ showBackgroundUploads: !this.data.showBackgroundUploads });
   },
   onSubjectTap(e) {
     const index = e.currentTarget.dataset.index;
@@ -109,18 +171,18 @@ Page({
     });
   },
   hasActiveImageStatuses() {
-    return this.data.uploads.some(item => (
-      item.imageId && (item.status === 'pending' || item.status === 'segmented')
+    return this.data.uploads.concat(this.data.backgroundUploads).some(item => (
+      item.imageId && isActiveStatus(item.status)
     ));
   },
   refreshImageStatuses() {
-    const activeImageIds = this.data.uploads
-      .filter(item => item.imageId && (item.status === 'pending' || item.status === 'segmented'))
+    const activeImageIds = this.data.uploads.concat(this.data.backgroundUploads)
+      .filter(item => item.imageId && isActiveStatus(item.status))
       .map(item => item.imageId);
     if (!activeImageIds.length) return Promise.resolve([]);
     return api.getImageStatuses(activeImageIds).then(statuses => {
       const statusesById = new Map(statuses.map(item => [item.image_id, item]));
-      const uploads = this.data.uploads.map(item => {
+      const updateUploadStatuses = uploads => uploads.map(item => {
         const status = statusesById.get(item.imageId);
         if (!status) return item;
         return {
@@ -131,7 +193,11 @@ Page({
           errorMessage: status.error_message,
         };
       });
-      this.setData({ uploads });
+      const uploads = updateUploadStatuses(this.data.uploads);
+      const backgroundUploads = updateUploadStatuses(this.data.backgroundUploads)
+        .filter(shouldKeepBackgroundUpload);
+      this.setData({ uploads, backgroundUploads });
+      this.persistBackgroundUploads();
       return statuses;
     });
   },
@@ -157,13 +223,28 @@ Page({
   onRetryTap(e) {
     const index = e.currentTarget.dataset.index;
     const image = this.data.uploads[index];
-    if (!image || !image.imageId || image.status !== 'failed') return Promise.resolve();
-    return api.retryImage(image.imageId).then(result => {
+    return this.retryImage(image && image.imageId);
+  },
+  onBackgroundRetryTap(e) {
+    return this.retryImage(e.currentTarget.dataset.imageId);
+  },
+  retryImage(imageId) {
+    const findFailed = item => item.imageId === imageId && item.status === 'failed';
+    if (!imageId || !this.data.uploads.concat(this.data.backgroundUploads).some(findFailed)) {
+      return Promise.resolve();
+    }
+    return api.retryImage(imageId).then(result => {
+      const updateRetryStatus = uploads => uploads.map(item => item.imageId === imageId ? ({
+        ...item,
+        status: result.status,
+        errorCode: null,
+        errorMessage: null,
+      }) : item);
       this.setData({
-        [`uploads[${index}].status`]: result.status,
-        [`uploads[${index}].errorCode`]: null,
-        [`uploads[${index}].errorMessage`]: null,
+        uploads: updateRetryStatus(this.data.uploads),
+        backgroundUploads: updateRetryStatus(this.data.backgroundUploads),
       });
+      this.persistBackgroundUploads();
       return this.startStatusPolling();
     }).catch(() => {
       wx.showToast({ title: '重试失败，请稍后再试', icon: 'none' });

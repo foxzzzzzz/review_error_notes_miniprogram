@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs');
 
 const capturePath = path.resolve(__dirname, '..', 'pages', 'capture', 'capture.js');
 const apiPath = path.resolve(__dirname, '..', 'utils', 'api.js');
@@ -183,6 +184,7 @@ test('capture gives newly selected images the batch subject', () => {
     chooseMedia(options) {
       options.success({ tempFiles: [{ tempFilePath: '/tmp/new.jpg' }] });
     },
+    setStorageSync() {},
   };
   const definition = loadCapturePage({});
   const page = createCapturePage(definition);
@@ -192,6 +194,144 @@ test('capture gives newly selected images the batch subject', () => {
     page.takePhoto();
 
     assert.equal(page.data.uploads[0].subject, 'chinese');
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture starts a new batch without discarding submitted active jobs', () => {
+  const stored = {};
+  global.wx = {
+    chooseMedia(options) {
+      options.success({ tempFiles: [{ tempFilePath: '/tmp/new.jpg' }] });
+    },
+    setStorageSync(key, value) { stored[key] = value; },
+  };
+  const definition = loadCapturePage({});
+  const page = createCapturePage(definition, [
+    { id: 'draft', path: '/tmp/draft.jpg', status: 'pending', subject: 'math' },
+    { id: 'submitted', imageId: 'image-1', path: '/tmp/submitted.jpg', status: 'segmented', subject: 'math' },
+    { id: 'finished', imageId: 'image-2', path: '/tmp/finished.jpg', status: 'confirmed', subject: 'math' },
+  ]);
+
+  try {
+    page.takePhoto();
+
+    assert.deepEqual(page.data.uploads.map(item => item.path), ['/tmp/new.jpg']);
+    assert.deepEqual(page.data.backgroundUploads.map(item => item.imageId), ['image-1']);
+    assert.deepEqual(stored.captureBackgroundUploads.map(item => item.imageId), ['image-1']);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture restores and polls submitted background jobs', async () => {
+  const requestedIds = [];
+  global.wx = {
+    getStorageSync(key) {
+      return key === 'captureBackgroundUploads' ? [{
+        id: 'submitted', imageId: 'image-1', path: '/tmp/submitted.jpg', status: 'pending', subject: 'math',
+      }] : '';
+    },
+    setStorageSync() {},
+  };
+  const definition = loadCapturePage({
+    getImageStatuses(ids) {
+      requestedIds.push(ids);
+      return Promise.resolve([{ image_id: 'image-1', status: 'segmented', question_count: 0 }]);
+    },
+  });
+  const page = createCapturePage(definition);
+
+  try {
+    page.restoreBackgroundUploads();
+    await page.refreshImageStatuses();
+
+    assert.deepEqual(requestedIds, [['image-1']]);
+    assert.equal(page.data.backgroundUploads[0].status, 'segmented');
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture stores background jobs separately for each student', () => {
+  const stored = {};
+  global.wx = {
+    getStorageSync(key) { return key === 'studentId' ? 'student-a' : ''; },
+    setStorageSync(key, value) { stored[key] = value; },
+  };
+  const definition = loadCapturePage({});
+  const page = createCapturePage(definition);
+  page.data.backgroundUploads = [{
+    id: 'submitted', imageId: 'image-1', status: 'pending', subject: 'math',
+  }];
+
+  try {
+    page.persistBackgroundUploads();
+
+    assert.deepEqual(stored['captureBackgroundUploads:student-a'].map(item => item.imageId), ['image-1']);
+    assert.equal(stored.captureBackgroundUploads, undefined);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture changes the main preview when a thumbnail is selected', () => {
+  global.wx = {};
+  const definition = loadCapturePage({});
+  const page = createCapturePage(definition, [
+    { id: 'one', path: '/tmp/one.jpg', status: 'pending' },
+    { id: 'two', path: '/tmp/two.jpg', status: 'pending' },
+  ]);
+
+  try {
+    page.selectPreview({ currentTarget: { dataset: { id: 'two' } } });
+
+    assert.equal(page.data.previewUrl, '/tmp/two.jpg');
+    assert.equal(page.data.previewUploadId, 'two');
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture template renders clickable thumbnails and background jobs', () => {
+  const template = fs.readFileSync(path.resolve(__dirname, '..', 'pages', 'capture', 'capture.wxml'), 'utf8');
+
+  assert.match(template, /bindtap="selectPreview"/);
+  assert.match(template, /backgroundUploads/);
+});
+
+
+test('capture expands and collapses the background job list', () => {
+  global.wx = {};
+  const definition = loadCapturePage({});
+  const page = createCapturePage(definition);
+
+  try {
+    page.toggleBackgroundUploads();
+    assert.equal(page.data.showBackgroundUploads, true);
+    page.toggleBackgroundUploads();
+    assert.equal(page.data.showBackgroundUploads, false);
   } finally {
     delete global.wx;
     delete global.Page;
@@ -222,7 +362,7 @@ test('capture keeps an individual subject override after batch selection', () =>
 
 
 test('capture refreshes a submitted image with its backend status', async () => {
-  global.wx = {};
+  global.wx = { setStorageSync() {} };
   const definition = loadCapturePage({
     getImageStatuses: () => Promise.resolve([{
       image_id: 'image-1',

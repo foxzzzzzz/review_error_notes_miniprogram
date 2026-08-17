@@ -28,6 +28,27 @@
   width: 100%;
 }
 
+.preview-strip {
+  margin: -8px 0 16px;
+  white-space: nowrap;
+}
+
+.preview-thumbnails {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.preview-thumbnail {
+  width: 58px;
+  height: 58px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.preview-thumbnail.selected {
+  border-color: #1aad19;
+}
+
 .placeholder {
   color: #999;
   font-size: 16px;
@@ -35,6 +56,30 @@
 
 .upload-list {
   margin-bottom: 16px;
+}
+
+.background-list {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  display: block;
+  margin: 0 0 8px 2px;
+  color: #526052;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.background-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6d796e;
+  font-size: 13px;
+}
+
+.background-heading .section-title {
+  margin-bottom: 8px;
 }
 
 .batch-subject-row {
