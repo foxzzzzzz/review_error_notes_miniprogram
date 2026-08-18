@@ -11,11 +11,14 @@
 .result button { margin: 8px 0; }
 .history { margin-top: 20px; }
 .section-title { font-size: 14px; color: #999; padding: 10px 0; }
-.history-item { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 8px; }
+.history-swipe { position: relative; overflow: hidden; border-radius: 8px; margin-bottom: 8px; }
+.history-item { position: relative; z-index: 1; background: #fff; border-radius: 8px; padding: 15px; transition: transform 180ms ease; }
+.history-item.swiped { transform: translateX(-76px); }
+.history-delete { position: absolute; z-index: 0; top: 0; right: 0; bottom: 0; width: 76px; display: flex; align-items: center; justify-content: center; color: #fff; background: #e64340; font-size: 15px; }
 .history-main { display: flex; flex-direction: column; gap: 6px; }
 .history-title { color: #333; font-size: 16px; }
 .history-time { color: #999; font-size: 13px; }
-.history-status { display: flex; gap: 12px; color: #777; font-size: 12px; }
+.history-status { display: flex; flex-wrap: wrap; gap: 6px 12px; color: #777; font-size: 12px; }
 .history-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .history-actions button { flex: 1 1 30%; margin: 0; }
 .history-actions .result-action { color: #fff; background: #1aad19; }

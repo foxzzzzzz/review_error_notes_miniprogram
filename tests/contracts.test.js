@@ -37,6 +37,7 @@ test('API wrapper exposes the complete backend route contract', async () => {
   await api.listSheets();
   await api.getSheetGeneration('sheet-id');
   await api.retrySheetGeneration('sheet-id');
+  await api.deleteSheet('sheet-id');
   await api.getSheetReview('sheet-id');
   await api.listSheetAttempts('sheet-id');
   await api.createSheetAttempt('sheet-id', {});
@@ -62,6 +63,7 @@ test('API wrapper exposes the complete backend route contract', async () => {
     { method: 'GET', path: '/api/sheets' },
     { method: 'GET', path: '/api/sheets/sheet-id/generation' },
     { method: 'POST', path: '/api/sheets/sheet-id/retry' },
+    { method: 'DELETE', path: '/api/sheets/sheet-id' },
     { method: 'GET', path: '/api/sheets/sheet-id/review' },
     { method: 'GET', path: '/api/sheets/sheet-id/attempts' },
     { method: 'POST', path: '/api/sheets/sheet-id/attempts' },

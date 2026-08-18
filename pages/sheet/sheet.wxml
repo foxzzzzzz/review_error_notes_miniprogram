@@ -57,14 +57,29 @@
     <button bindtap="share">分享/发送到电脑</button>
   </view>
 
-  <view class="history">
+  <view class="history" bindtap="closeHistorySwipe">
     <view class="section-title">历史错题集</view>
-    <view class="history-item" wx:for="{{sheets}}" wx:key="id">
+    <view class="history-swipe" wx:for="{{sheets}}" wx:key="id">
+      <view
+        class="history-delete"
+        wx:if="{{item.canDelete}}"
+        catchtap="confirmDeleteSheet"
+        data-id="{{item.id}}"
+      >{{deletingSheetId === item.id ? '删除中' : '删除'}}</view>
+      <view
+        class="history-item {{swipedSheetId === item.id ? 'swiped' : ''}}"
+        bindtouchstart="onHistoryTouchStart"
+        bindtouchmove="onHistoryTouchMove"
+        bindtouchend="onHistoryTouchEnd"
+        data-id="{{item.id}}"
+        data-status="{{item.generation_status}}"
+      >
       <view class="history-main">
         <text class="history-title">📝 {{item.title || '错题集'}}</text>
         <text class="history-time">{{item.createdAtText}}</text>
         <view class="history-status">
           <text>{{item.generationStatusText}}</text>
+          <text wx:if="{{item.generationDurationText}}">{{item.generationDurationText}}</text>
           <block wx:if="{{item.generation_status === 'completed'}}">
           <text>{{item.practice_status === 'completed' ? '已完成' : '未练习'}}</text>
           <text wx:if="{{item.latest_accuracy !== null && item.latest_accuracy !== undefined}}">最近正确率 {{item.accuracyText}}</text>
@@ -81,6 +96,7 @@
           {{item.practice_status === 'completed' ? '修改结果' : '记录结果'}}
         </button>
       </view>
+    </view>
     </view>
   </view>
 </view>

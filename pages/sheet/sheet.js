@@ -5,6 +5,19 @@ const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
 const pad = value => String(value).padStart(2, '0');
 const uniqueIds = ids => [...new Set(Array.isArray(ids) ? ids : [])];
 const activeStatuses = new Set(['pending', 'processing']);
+const terminalStatuses = new Set(['completed', 'failed']);
+const SWIPE_TRIGGER_PX = 45;
+
+const showModal = options => new Promise((resolve, reject) => {
+  const result = wx.showModal({
+    ...options,
+    success: resolve,
+    fail: reject,
+  });
+  if (result && typeof result.then === 'function') {
+    result.then(resolve, reject);
+  }
+});
 
 const formatBeijingDateTime = createdAt => {
   if (!createdAt) return '';
@@ -18,6 +31,13 @@ const formatBeijingDateTime = createdAt => {
     pad(beijingDate.getUTCMonth() + 1),
     pad(beijingDate.getUTCDate()),
   ].join('-') + ` ${pad(beijingDate.getUTCHours())}:${pad(beijingDate.getUTCMinutes())}`;
+};
+
+const formatGenerationDuration = (value, generationStatus) => {
+  if (generationStatus !== 'completed' || value === null || value === '') return '';
+  const seconds = Number(value);
+  if (!Number.isInteger(seconds) || seconds < 0) return '';
+  return `生成时长：${seconds} s`;
 };
 
 const formatSheet = sheet => {
@@ -39,6 +59,11 @@ const formatSheet = sheet => {
     progressText,
     generationStatusText,
     canOpen: generationStatus === 'completed',
+    canDelete: terminalStatuses.has(generationStatus),
+    generationDurationText: formatGenerationDuration(
+      sheet.generation_duration_seconds,
+      generationStatus
+    ),
     createdAtText: formatBeijingDateTime(sheet.created_at),
     accuracyText: sheet.latest_accuracy == null
       ? ''
@@ -57,6 +82,8 @@ Page({
     generationError: '',
     pdfUrl: '',
     sheets: [],
+    swipedSheetId: '',
+    deletingSheetId: '',
   },
 
   onShow() {
@@ -205,6 +232,86 @@ Page({
     }
   },
 
+  onHistoryTouchStart(e) {
+    const dataset = e.currentTarget.dataset || {};
+    const touch = e.touches && e.touches[0];
+    if (!touch || !terminalStatuses.has(dataset.status)) {
+      this._historyTouch = null;
+      return;
+    }
+    this._historyTouch = {
+      id: dataset.id,
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+  },
+
+  onHistoryTouchMove() {},
+
+  onHistoryTouchEnd(e) {
+    const start = this._historyTouch;
+    this._historyTouch = null;
+    const touch = e.changedTouches && e.changedTouches[0];
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) <= Math.abs(deltaY) || Math.abs(deltaX) < SWIPE_TRIGGER_PX) {
+      return;
+    }
+    this.setData({ swipedSheetId: deltaX < 0 ? start.id : '' });
+  },
+
+  closeHistorySwipe() {
+    if (this.data.swipedSheetId) this.setData({ swipedSheetId: '' });
+  },
+
+  confirmDeleteSheet(e) {
+    const sheetId = e.currentTarget.dataset.id;
+    if (!sheetId || this.data.deletingSheetId) return Promise.resolve();
+    this.setData({ deletingSheetId: sheetId });
+    return showModal({
+      title: '删除错题集？',
+      content: '删除后将同时清除该错题集、PDF 和已记录的练习结果，并重新计算错题状态。此操作不可恢复。',
+      confirmText: '删除',
+      confirmColor: '#e64340',
+      cancelText: '取消',
+    }).then(result => {
+      if (!result.confirm) {
+        this.setData({ deletingSheetId: '' });
+        return null;
+      }
+      return api.deleteSheet(sheetId).then(() => {
+        const deletingActive = this.data.activeGeneration
+          && this.data.activeGeneration.id === sheetId;
+        const nextData = {
+          sheets: this.data.sheets.filter(item => item.id !== sheetId),
+          swipedSheetId: '',
+          deletingSheetId: '',
+        };
+        if (deletingActive) {
+          this.stopGenerationPolling();
+          Object.assign(nextData, {
+            activeGeneration: null,
+            generationError: '',
+            generating: false,
+            pdfUrl: '',
+          });
+        }
+        this.setData(nextData);
+        wx.showToast({ title: '已删除', icon: 'success' });
+        return null;
+      });
+    }).catch(error => {
+      this.setData({ swipedSheetId: '', deletingSheetId: '' });
+      wx.showToast({
+        title: (error && error.message) || '删除失败，请稍后重试',
+        icon: 'none',
+      });
+      return null;
+    });
+  },
+
   retryGeneration(e) {
     const sheetId = (e && e.currentTarget && e.currentTarget.dataset.id)
       || (this.data.activeGeneration && this.data.activeGeneration.id);
@@ -273,4 +380,4 @@ Page({
   onDifficulty(e) { this.setData({ difficultyBoost: e.detail.value }); },
 });
 
-module.exports = { formatBeijingDateTime };
+module.exports = { formatBeijingDateTime, formatGenerationDuration };

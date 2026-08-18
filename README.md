@@ -198,7 +198,7 @@ cd miniprogram
 | 📷 拍照录入 | 拍照上传错题 | `wx.chooseMedia` 拍照/选图 → 上传后端 → 科目回显 |
 | 📚 错题库 | 浏览管理错题 | 按科目/标签筛选 → 勾选 → 跳转出卷 |
 | 🔍 错题详情 | 修正 OCR 结果 | 编辑文字/调整标签/修改难度/删除 |
-| 📝 出卷 | 生成错题集 | 配置衍生题数+难度 → 生成 A4 PDF → 预览/分享 |
+| 📝 出卷 | 生成错题集 | 配置衍生题数+难度 → 生成 A4 PDF → 查看生成时长；终态记录可左滑确认删除 |
 | 👤 我的 | 个人设置 | 年级/册别设定、手机绑定、统计信息 |
 
 ---
@@ -218,6 +218,7 @@ cd miniprogram
 | DELETE | `/api/questions/{id}` | 删除错题 | ✅ |
 | POST | `/api/sheets` | 生成错题集 | ✅ |
 | GET | `/api/sheets` | 历史错题集列表 | ✅ |
+| DELETE | `/api/sheets/{id}` | 删除终态错题集并回算练习统计 | ✅ |
 | GET | `/api/sheets/{id}/generation` | 查询后台生成状态与进度 | ✅ |
 | POST | `/api/sheets/{id}/retry` | 重新生成失败的错题集 | ✅ |
 

@@ -257,6 +257,7 @@ module.exports = {
   listSheets: () => request('/sheets'),
   getSheetGeneration: (id) => request(`/sheets/${id}/generation`),
   retrySheetGeneration: (id) => request(`/sheets/${id}/retry`, { method: 'POST' }),
+  deleteSheet: (id) => request(`/sheets/${id}`, { method: 'DELETE' }),
   getSheetReview: (id) => request(`/sheets/${id}/review`),
   listSheetAttempts: (id) => request(`/sheets/${id}/attempts`),
   createSheetAttempt: (id, data) => (

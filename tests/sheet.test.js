@@ -7,6 +7,7 @@ const path = require('node:path');
 const pageDir = path.resolve(__dirname, '..', 'pages', 'sheet');
 const js = fs.readFileSync(path.join(pageDir, 'sheet.js'), 'utf8');
 const wxml = fs.readFileSync(path.join(pageDir, 'sheet.wxml'), 'utf8');
+const wxss = fs.readFileSync(path.join(pageDir, 'sheet.wxss'), 'utf8');
 const sheetPath = path.join(pageDir, 'sheet.js');
 const apiPath = path.resolve(__dirname, '..', 'utils', 'api.js');
 
@@ -23,6 +24,7 @@ function loadSheetPage(apiOverrides = {}) {
       listSheets: () => Promise.resolve([]),
       getSheetGeneration: () => Promise.resolve({ generation_status: 'completed' }),
       retrySheetGeneration: () => Promise.resolve({ generation_status: 'pending' }),
+      deleteSheet: () => Promise.resolve(),
       resolveServerUrl: value => value,
       ...apiOverrides,
     },
@@ -113,6 +115,187 @@ test('history exposes separate PDF and practice result actions', () => {
   assert.match(wxml, /bindtap="openResult"/);
   assert.match(wxml, /记录结果/);
   assert.match(wxml, /修改结果/);
+});
+
+
+test('completed sheet formats generation duration in integer seconds', () => {
+  loadSheetPage();
+  const { formatGenerationDuration } = require(sheetPath);
+
+  assert.equal(formatGenerationDuration(42, 'completed'), '生成时长：42 s');
+  assert.equal(formatGenerationDuration(null, 'completed'), '');
+  assert.equal(formatGenerationDuration(-1, 'completed'), '');
+  assert.equal(formatGenerationDuration(42, 'failed'), '');
+  assert.equal(formatGenerationDuration(42, 'processing'), '');
+});
+
+
+test('history template exposes duration and terminal swipe delete action', () => {
+  assert.match(wxml, /item\.generationDurationText/);
+  assert.match(wxml, /class="history"[^>]*bindtap="closeHistorySwipe"/);
+  assert.match(wxml, /class="history-delete"/);
+  assert.match(wxml, /catchtap="confirmDeleteSheet"/);
+  assert.match(wxml, /item\.canDelete/);
+  assert.match(wxss, /\.history-status\s*\{[^}]*flex-wrap:\s*wrap/);
+});
+
+
+const touchEvent = (id, status, x, y, changed = false) => ({
+  currentTarget: { dataset: { id, status } },
+  [changed ? 'changedTouches' : 'touches']: [{ clientX: x, clientY: y }],
+});
+
+
+test('horizontal left swipe opens one completed history row', () => {
+  const page = loadSheetPage();
+  const context = createContext(page);
+
+  context.onHistoryTouchStart(touchEvent('sheet-1', 'completed', 200, 100));
+  context.onHistoryTouchEnd(touchEvent('sheet-1', 'completed', 120, 105, true));
+
+  assert.equal(context.data.swipedSheetId, 'sheet-1');
+});
+
+
+test('mostly vertical history movement does not open delete action', () => {
+  const page = loadSheetPage();
+  const context = createContext(page);
+
+  context.onHistoryTouchStart(touchEvent('sheet-1', 'completed', 200, 100));
+  context.onHistoryTouchEnd(touchEvent('sheet-1', 'completed', 190, 30, true));
+
+  assert.equal(context.data.swipedSheetId, '');
+});
+
+
+test('active history row never opens delete action', () => {
+  const page = loadSheetPage();
+  const context = createContext(page);
+
+  context.onHistoryTouchStart(touchEvent('sheet-1', 'processing', 200, 100));
+  context.onHistoryTouchEnd(touchEvent('sheet-1', 'processing', 100, 100, true));
+
+  assert.equal(context.data.swipedSheetId, '');
+});
+
+
+test('opening another history row closes the previous row', () => {
+  const page = loadSheetPage();
+  const context = createContext(page);
+
+  context.onHistoryTouchStart(touchEvent('sheet-1', 'completed', 200, 100));
+  context.onHistoryTouchEnd(touchEvent('sheet-1', 'completed', 100, 100, true));
+  context.onHistoryTouchStart(touchEvent('sheet-2', 'failed', 200, 100));
+  context.onHistoryTouchEnd(touchEvent('sheet-2', 'failed', 100, 100, true));
+
+  assert.equal(context.data.swipedSheetId, 'sheet-2');
+});
+
+
+test('canceling sheet deletion keeps the history record', async () => {
+  let deleteCalls = 0;
+  const page = loadSheetPage({
+    deleteSheet: () => {
+      deleteCalls += 1;
+      return Promise.resolve();
+    },
+  });
+  global.wx = {
+    showModal(options) { options.success({ confirm: false }); },
+    showToast() {},
+  };
+  const context = createContext(page, {
+    sheets: [{ id: 'sheet-1', generation_status: 'completed' }],
+    swipedSheetId: 'sheet-1',
+  });
+
+  await context.confirmDeleteSheet({ currentTarget: { dataset: { id: 'sheet-1' } } });
+
+  assert.equal(deleteCalls, 0);
+  assert.equal(context.data.sheets.length, 1);
+});
+
+
+test('repeated sheet delete taps open only one confirmation flow', async () => {
+  let modalCalls = 0;
+  let resolveModal;
+  const page = loadSheetPage();
+  global.wx = {
+    showModal(options) {
+      modalCalls += 1;
+      resolveModal = options.success;
+    },
+    showToast() {},
+  };
+  const context = createContext(page, {
+    sheets: [{ id: 'sheet-1', generation_status: 'completed' }],
+  });
+
+  const first = context.confirmDeleteSheet({ currentTarget: { dataset: { id: 'sheet-1' } } });
+  const second = context.confirmDeleteSheet({ currentTarget: { dataset: { id: 'sheet-1' } } });
+
+  assert.equal(modalCalls, 1);
+  resolveModal({ confirm: false });
+  await Promise.all([first, second]);
+});
+
+
+test('confirmed sheet deletion removes matching history and top result state', async () => {
+  const deleted = [];
+  const page = loadSheetPage({
+    deleteSheet: id => {
+      deleted.push(id);
+      return Promise.resolve();
+    },
+  });
+  global.wx = {
+    showModal(options) { options.success({ confirm: true }); },
+    showToast() {},
+  };
+  const context = createContext(page, {
+    sheets: [
+      { id: 'sheet-1', generation_status: 'completed' },
+      { id: 'sheet-2', generation_status: 'completed' },
+    ],
+    activeGeneration: { id: 'sheet-1', generation_status: 'completed' },
+    pdfUrl: '/pdfs/sheet-1.pdf',
+    swipedSheetId: 'sheet-1',
+  });
+  let pollingStopped = 0;
+  context.stopGenerationPolling = () => { pollingStopped += 1; };
+
+  await context.confirmDeleteSheet({ currentTarget: { dataset: { id: 'sheet-1' } } });
+
+  assert.deepEqual(deleted, ['sheet-1']);
+  assert.deepEqual(context.data.sheets.map(item => item.id), ['sheet-2']);
+  assert.equal(context.data.activeGeneration, null);
+  assert.equal(context.data.pdfUrl, '');
+  assert.equal(context.data.swipedSheetId, '');
+  assert.equal(context.data.deletingSheetId, '');
+  assert.equal(pollingStopped, 1);
+});
+
+
+test('failed sheet deletion keeps history and shows backend message', async () => {
+  let toast;
+  const page = loadSheetPage({
+    deleteSheet: () => Promise.reject(new Error('错题集正在生成，暂不能删除')),
+  });
+  global.wx = {
+    showModal(options) { options.success({ confirm: true }); },
+    showToast(options) { toast = options; },
+  };
+  const context = createContext(page, {
+    sheets: [{ id: 'sheet-1', generation_status: 'completed' }],
+    swipedSheetId: 'sheet-1',
+  });
+
+  await context.confirmDeleteSheet({ currentTarget: { dataset: { id: 'sheet-1' } } });
+
+  assert.equal(context.data.sheets.length, 1);
+  assert.equal(context.data.swipedSheetId, '');
+  assert.equal(context.data.deletingSheetId, '');
+  assert.equal(toast.title, '错题集正在生成，暂不能删除');
 });
 
 
