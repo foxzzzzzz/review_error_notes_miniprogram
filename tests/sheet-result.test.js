@@ -50,6 +50,24 @@ function contextFor(page, values = {}) {
 }
 
 
+test('idempotency key stays within the backend limit for a long random suffix', () => {
+  const originalNow = Date.now;
+  const originalRandom = Math.random;
+  Date.now = () => 9999999999999;
+  Math.random = () => 0.9999999999999999;
+  try {
+    loadPage();
+    const { createIdempotencyKey } = require(pagePath);
+    const key = createIdempotencyKey('12345678-1234-1234-1234-123456789012');
+
+    assert.ok(key.length <= 64);
+  } finally {
+    Date.now = originalNow;
+    Math.random = originalRandom;
+  }
+});
+
+
 test('result page loads all sheet items as correct by default', async () => {
   const page = loadPage({
     getSheetReview: () => Promise.resolve({

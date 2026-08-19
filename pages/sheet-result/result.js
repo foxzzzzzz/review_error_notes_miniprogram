@@ -2,7 +2,7 @@ const api = require('../../utils/api');
 
 
 const createIdempotencyKey = sheetId => (
-  `${sheetId}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  `${sheetId}-${Date.now()}-${Math.random().toString(16).slice(2, 14)}`
 );
 
 const withStats = groups => {
