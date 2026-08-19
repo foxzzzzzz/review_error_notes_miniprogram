@@ -115,6 +115,7 @@
 }
 
 .upload-page-region {
+  flex: 1;
   justify-content: flex-start;
 }
 
@@ -125,12 +126,22 @@
 
 .upload-page {
   font-size: 14px;
+  white-space: nowrap;
+}
+
+.status-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
 }
 
 .status {
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 4px;
+  white-space: nowrap;
 }
 
 .status-pending {
@@ -173,6 +184,24 @@
 }
 
 .retry-btn::after {
+  border: 0;
+}
+
+.review-btn {
+  flex: none;
+  min-width: 52px;
+  margin: 0;
+  padding: 0 6px;
+  color: #1aad19;
+  background: #fff;
+  border: 1px solid #1aad19;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 26px;
+  white-space: nowrap;
+}
+
+.review-btn::after {
   border: 0;
 }
 

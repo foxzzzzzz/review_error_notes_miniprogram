@@ -25,9 +25,11 @@
         <text class="upload-page">📄 第{{index+1}}页</text>
       </view>
       <view class="upload-region upload-status-region">
-        <text class="status status-{{item.status}}">{{statusText[item.status]}}</text>
-        <button wx:if="{{item.status === 'failed' && item.imageId}}" class="retry-btn" bindtap="onRetryTap" data-index="{{index}}">重试</button>
-        <button wx:if="{{item.status === 'needs_review' && item.imageId}}" class="retry-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">去确认</button>
+        <view class="status-action">
+          <text class="status status-{{item.status}}">{{item.status === 'confirmed' && item.questionCount === 0 ? '处理完成（未发现错题）' : statusText[item.status]}}</text>
+          <button wx:if="{{item.status === 'failed' && item.imageId}}" class="retry-btn" bindtap="onRetryTap" data-index="{{index}}">重试</button>
+          <button wx:if="{{item.status === 'needs_review' && item.imageId}}" class="review-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">去确认</button>
+        </view>
       </view>
       <view class="upload-region upload-subject-region">
         <view class="subject-tag" bindtap="onSubjectTap" data-index="{{index}}">{{item.subject ? (subjectMap[item.subject] || item.subject) : '点击选择科目'}}</view>
@@ -46,9 +48,11 @@
           <text class="upload-page">已提交图片</text>
         </view>
         <view class="upload-region upload-status-region">
-          <text class="status status-{{item.status}}">{{statusText[item.status]}}</text>
-          <button wx:if="{{item.status === 'failed'}}" class="retry-btn" bindtap="onBackgroundRetryTap" data-image-id="{{item.imageId}}">重试</button>
-          <button wx:if="{{item.status === 'needs_review'}}" class="retry-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">去确认</button>
+          <view class="status-action">
+            <text class="status status-{{item.status}}">{{item.status === 'confirmed' && item.questionCount === 0 ? '处理完成（未发现错题）' : statusText[item.status]}}</text>
+            <button wx:if="{{item.status === 'failed'}}" class="retry-btn" bindtap="onBackgroundRetryTap" data-image-id="{{item.imageId}}">重试</button>
+            <button wx:if="{{item.status === 'needs_review'}}" class="review-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">去确认</button>
+          </view>
         </view>
         <view class="upload-region upload-subject-region">
           <text>{{item.subject ? (subjectMap[item.subject] || item.subject) : '未设置科目'}}</text>

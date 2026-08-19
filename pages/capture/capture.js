@@ -45,7 +45,7 @@ Page({
       pending: '排队处理中',
       segmented: '识别处理中',
       confirmed: '处理完成',
-      needs_review: '处理完成（待确认）',
+      needs_review: '待确认',
       failed: '处理异常',
     },
   },
@@ -59,7 +59,9 @@ Page({
     return api.getProfile()
       .then(profile => {
         this.applyStudentProfile(profile);
-        return this.startStatusPolling();
+        return this.refreshImageStatuses({ includeNeedsReview: true })
+          .catch(() => [])
+          .then(() => this.startStatusPolling());
       })
       .catch(() => wx.showToast({ title: '学生设置加载失败', icon: 'none' }));
   },
@@ -175,14 +177,18 @@ Page({
       item.imageId && isActiveStatus(item.status)
     ));
   },
-  refreshImageStatuses() {
-    const activeImageIds = this.data.uploads.concat(this.data.backgroundUploads)
-      .filter(item => item.imageId && isActiveStatus(item.status))
+  refreshImageStatuses({ includeNeedsReview = false } = {}) {
+    const imageIds = this.data.uploads.concat(this.data.backgroundUploads)
+      .filter(item => item.imageId && (
+        isActiveStatus(item.status)
+        || (includeNeedsReview && item.status === 'needs_review')
+      ))
       .map(item => item.imageId);
-    if (!activeImageIds.length) return Promise.resolve([]);
+    const uniqueImageIds = [...new Set(imageIds)];
+    if (!uniqueImageIds.length) return Promise.resolve([]);
     const statusBatches = [];
-    for (let index = 0; index < activeImageIds.length; index += 9) {
-      statusBatches.push(activeImageIds.slice(index, index + 9));
+    for (let index = 0; index < uniqueImageIds.length; index += 9) {
+      statusBatches.push(uniqueImageIds.slice(index, index + 9));
     }
     return Promise.all(statusBatches.map(api.getImageStatuses)).then(results => {
       const statuses = results.flat();

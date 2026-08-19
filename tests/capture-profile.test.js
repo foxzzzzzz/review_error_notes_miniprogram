@@ -389,6 +389,79 @@ test('capture refreshes a submitted image with its backend status', async () => 
   }
 });
 
+test('capture removes a confirmed background image after returning from review', async () => {
+  const requestedIds = [];
+  global.wx = {
+    getStorageSync(key) { return key === 'token' ? 'token' : ''; },
+    setStorageSync() {},
+    showToast() {},
+  };
+  const definition = loadCapturePage({
+    getProfile: () => Promise.resolve({ grade: 1, semester: 1 }),
+    getImageStatuses(ids) {
+      requestedIds.push(ids);
+      return Promise.resolve([{ image_id: 'image-1', status: 'confirmed' }]);
+    },
+  });
+  const page = createCapturePage(definition);
+  page.data.backgroundUploads = [{
+    id: 'submitted', imageId: 'image-1', status: 'needs_review', subject: 'math',
+  }];
+
+  try {
+    await page.onShow();
+
+    assert.deepEqual(requestedIds, [['image-1']]);
+    assert.deepEqual(page.data.backgroundUploads, []);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+test('capture keeps a background image that still needs review after returning', async () => {
+  const requestedIds = [];
+  global.wx = {
+    getStorageSync(key) { return key === 'token' ? 'token' : ''; },
+    setStorageSync() {},
+    showToast() {},
+  };
+  const definition = loadCapturePage({
+    getProfile: () => Promise.resolve({ grade: 1, semester: 1 }),
+    getImageStatuses(ids) {
+      requestedIds.push(ids);
+      return Promise.resolve([{ image_id: 'image-1', status: 'needs_review' }]);
+    },
+  });
+  const page = createCapturePage(definition);
+  page.data.backgroundUploads = [{
+    id: 'submitted', imageId: 'image-1', status: 'needs_review', subject: 'math',
+  }];
+
+  try {
+    await page.onShow();
+
+    assert.deepEqual(requestedIds, [['image-1']]);
+    assert.equal(page.data.backgroundUploads.length, 1);
+    assert.equal(page.data.backgroundUploads[0].status, 'needs_review');
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+test('capture renders the review action as a no-wrap inline status action', () => {
+  const template = fs.readFileSync(path.resolve(__dirname, '..', 'pages', 'capture', 'capture.wxml'), 'utf8');
+  const styles = fs.readFileSync(path.resolve(__dirname, '..', 'pages', 'capture', 'capture.wxss'), 'utf8');
+
+  assert.match(template, /class="status-action"[\s\S]*去确认/);
+  assert.match(styles, /\.review-btn\s*\{[\s\S]*white-space:\s*nowrap/);
+});
+
 test('capture polls more than nine active images in API-sized batches', async () => {
   const requestedIds = [];
   global.wx = { setStorageSync() {} };
