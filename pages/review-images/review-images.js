@@ -18,6 +18,7 @@ Page({
     return api.listReviewImages().then(groups => {
       const prepared = groups.map(group => ({
         ...group,
+        thumbnailPath: '',
         questions: group.questions.map(question => ({
           ...question,
           decision: '',
@@ -39,10 +40,27 @@ Page({
       this.setData({ currentGroup: null, originalImagePath: '' });
       return Promise.resolve();
     }
-    this.setData({ activeIndex: index, currentGroup: group, originalImagePath: '' });
-    return api.downloadQuestionImage(group.questions[0].id, 'original')
+    this.setData({ activeIndex: index, currentGroup: group, originalImagePath: group.thumbnailPath });
+    if (group.thumbnailPath) return Promise.resolve();
+    return this.loadGroupOriginal(index)
       .then(originalImagePath => this.setData({ originalImagePath }))
       .catch(() => this.setData({ originalImagePath: '' }));
+  },
+  loadGroupOriginal(index) {
+    const group = this.data.groups[index];
+    if (!group || !group.questions.length) return Promise.resolve('');
+    if (group.thumbnailPath) return Promise.resolve(group.thumbnailPath);
+    return api.downloadQuestionImage(group.questions[0].id, 'original').then(thumbnailPath => {
+      const groups = this.data.groups.map((item, groupIndex) => groupIndex === index ? ({
+        ...item,
+        thumbnailPath,
+      }) : item);
+      this.setData({
+        groups,
+        currentGroup: groups[this.data.activeIndex],
+      });
+      return thumbnailPath;
+    });
   },
   onGroupTap(e) {
     return this.selectGroup(Number(e.currentTarget.dataset.index));
@@ -102,6 +120,30 @@ Page({
       questions: item.questions.map(question => ({ ...question, decision })),
     }) : item);
     this.setData({ groups, currentGroup: groups[this.data.activeIndex] });
+  },
+  onReprocessTap() {
+    const group = this.data.currentGroup;
+    if (!group || this.data.saving) return;
+    const corrections = ['missed_errors', 'false_positives', 'both'];
+    wx.showActionSheet({
+      itemList: ['漏识别错题', '误识别正确题', '两者都有'],
+      success: ({ tapIndex }) => wx.showModal({
+        title: '重新识别此图',
+        content: '当前未确认候选将被替换，原图无需重新上传。',
+        confirmText: '重新识别',
+        success: ({ confirm }) => {
+          if (!confirm) return;
+          this.setData({ saving: true });
+          api.reprocessReviewImage(group.image_id, corrections[tapIndex])
+            .then(() => {
+              wx.showToast({ title: '已重新识别，可返回拍照页查看进度', icon: 'none' });
+              return this.loadGroups();
+            })
+            .catch(() => wx.showToast({ title: '重新识别失败，请稍后重试', icon: 'none' }))
+            .finally(() => this.setData({ saving: false }));
+        },
+      }),
+    });
   },
   submitGroup() {
     const group = this.data.currentGroup;

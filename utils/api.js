@@ -252,6 +252,10 @@ module.exports = {
     `/questions/review/images/${encodeURIComponent(imageId)}/decisions`,
     { method: 'POST', data: { decisions } }
   ),
+  reprocessReviewImage: (imageId, correction) => request(
+    `/questions/review/images/${encodeURIComponent(imageId)}/reprocess`,
+    { method: 'POST', data: { correction } }
+  ),
   updateQuestion: (id, data) => request(`/questions/${id}`, { method: 'PATCH', data }),
   createSheet: (data) => request('/sheets', { method: 'POST', data }),
   listSheets: () => request('/sheets'),

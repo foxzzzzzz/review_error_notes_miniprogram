@@ -4,7 +4,10 @@
   <block wx:else>
     <scroll-view scroll-x class="group-scroll">
       <view class="group-tabs">
-        <text wx:for="{{groups}}" wx:key="image_id" data-index="{{index}}" bindtap="onGroupTap" class="group-tab {{activeIndex === index ? 'active' : ''}}">第{{index + 1}}张 · {{item.question_count}}题</text>
+        <view wx:for="{{groups}}" wx:key="image_id" data-index="{{index}}" bindtap="onGroupTap" class="group-tab {{activeIndex === index ? 'active' : ''}}">
+          <image wx:if="{{item.thumbnailPath}}" class="group-thumbnail" src="{{item.thumbnailPath}}" mode="aspectFill" />
+          <text>第{{index + 1}}张 · {{item.question_count}}题</text>
+        </view>
       </view>
     </scroll-view>
     <view class="source-card" bindtap="previewOriginal">
@@ -16,6 +19,7 @@
       <button data-decision="collect" bindtap="decideAll">全部收录为错题</button>
       <button data-decision="ignore" bindtap="decideAll">全部不收录</button>
     </view>
+    <button class="reprocess" disabled="{{saving}}" bindtap="onReprocessTap">本图识别不准确</button>
     <view class="question-card" wx:for="{{currentGroup.questions}}" wx:key="id">
       <image wx:if="{{item.cropImagePath}}" class="crop" src="{{item.cropImagePath}}" mode="widthFix" data-path="{{item.cropImagePath}}" bindtap="previewCrop" />
       <button wx:elif="{{!item.cropLoading}}" class="load-crop" data-id="{{item.id}}" bindtap="loadCrop">查看题目裁剪图</button>

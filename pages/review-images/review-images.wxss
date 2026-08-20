@@ -2,8 +2,9 @@
 .state { padding: 48px 0; text-align: center; color: #999; }
 .group-scroll { white-space: nowrap; margin-bottom: 12px; }
 .group-tabs { display: inline-flex; }
-.group-tab { margin-right: 8px; padding: 7px 10px; border-radius: 16px; background: #f3f3f3; color: #666; font-size: 12px; }
+.group-tab { display: inline-flex; align-items: center; margin-right: 8px; padding: 5px 10px 5px 5px; border-radius: 16px; background: #f3f3f3; color: #666; font-size: 12px; }
 .group-tab.active { background: #fff1cf; color: #956c17; }
+.group-thumbnail { width: 24px; height: 24px; margin-right: 5px; border-radius: 12px; }
 .source-card, .question-card { margin-bottom: 12px; padding: 14px; border-radius: 10px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
 .source-card { background: #fff8e1; }
 .source-title, .source-copy, .label { display: block; }
@@ -12,6 +13,7 @@
 .original { width: 100%; margin-top: 10px; border-radius: 6px; }
 .bulk-actions, .decision-row { display: flex; gap: 8px; margin-bottom: 12px; }
 .bulk-actions button, .decision-row button { flex: 1; margin: 0; font-size: 13px; background: #fff; color: #666; }
+.reprocess { margin: 0 0 12px; color: #956c17; background: #fff8e1; font-size: 13px; }
 .question-title { display: block; margin-bottom: 8px; color: #333; font-weight: 600; }
 .crop { width: 100%; margin-bottom: 10px; border-radius: 6px; }
 .load-crop { margin: 0 0 10px; color: #765615; background: #fff; font-size: 13px; }
