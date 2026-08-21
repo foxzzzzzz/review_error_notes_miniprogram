@@ -34,6 +34,14 @@ test('review page exposes per-image thumbnails and a correction reprocessing act
   assert.match(template, /本图识别不准确/);
 });
 
+
+test('review page explains the collected and pending counts for the same image', () => {
+  const template = read('pages/review-images/review-images.wxml');
+
+  assert.match(template, /本图已自动收录\{\{currentGroup\.auto_collected_count\}\}题/);
+  assert.match(template, /另有\{\{currentGroup\.question_count\}\}题需要你确认/);
+});
+
 test('review page loads only the active group original image on first open', () => {
   const script = read('pages/review-images/review-images.js');
 

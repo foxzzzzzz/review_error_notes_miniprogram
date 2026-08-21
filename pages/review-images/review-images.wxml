@@ -12,6 +12,7 @@
     </scroll-view>
     <view class="source-card" bindtap="previewOriginal">
       <text class="source-title">同一张原图中的待确认题目</text>
+      <text class="source-summary">本图已自动收录{{currentGroup.auto_collected_count}}题，另有{{currentGroup.question_count}}题需要你确认</text>
       <image wx:if="{{originalImagePath}}" class="original" src="{{originalImagePath}}" mode="widthFix" />
       <text class="source-copy">点击查看整张原图，可放大对照全部题目</text>
     </view>
