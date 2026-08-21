@@ -107,6 +107,27 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
+.background-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear-background-btn,
+.remove-btn {
+  margin: 0;
+  padding: 0 6px;
+  color: #c62828;
+  background: transparent;
+  font-size: 12px;
+  line-height: 24px;
+}
+
+.clear-background-btn::after,
+.remove-btn::after {
+  border: 0;
+}
+
 .upload-region {
   flex: 1;
   min-width: 0;

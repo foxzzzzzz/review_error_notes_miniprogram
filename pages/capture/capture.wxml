@@ -40,8 +40,11 @@
 
   <view class="background-list" wx:if="{{backgroundUploads.length > 0}}">
     <view class="background-heading" bindtap="toggleBackgroundUploads">
-      <text class="section-title">后台处理中任务（{{backgroundUploads.length}}）</text>
-      <text>{{showBackgroundUploads ? '收起' : '展开'}}</text>
+      <text class="section-title">未完成任务（{{backgroundUploads.length}}）</text>
+      <view class="background-heading-actions">
+        <button class="clear-background-btn" catchtap="onClearAllBackgroundTasks">批量移除</button>
+        <text>{{showBackgroundUploads ? '收起' : '展开'}}</text>
+      </view>
     </view>
     <view wx:if="{{showBackgroundUploads}}">
       <view class="upload-item" wx:for="{{backgroundUploads}}" wx:key="imageId">
@@ -54,6 +57,7 @@
             <text wx:else class="status status-{{item.status}}">{{item.status === 'confirmed' && item.questionCount === 0 ? '处理完成（未发现错题）' : statusText[item.status]}}</text>
             <button wx:if="{{item.status === 'failed'}}" class="retry-btn" bindtap="onBackgroundRetryTap" data-image-id="{{item.imageId}}">重试</button>
             <button wx:if="{{item.status === 'needs_review'}}" class="review-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">去确认</button>
+            <button class="remove-btn" bindtap="onRemoveBackgroundTap" data-image-id="{{item.imageId}}">移除</button>
           </view>
         </view>
         <view class="upload-region upload-subject-region">

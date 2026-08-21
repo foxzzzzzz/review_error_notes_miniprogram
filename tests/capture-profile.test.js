@@ -708,3 +708,78 @@ test('capture restores a retried failed image after a later page recreation', as
     delete require.cache[apiPath];
   }
 });
+
+
+test('capture removal explains that only pending review questions are discarded', async () => {
+  let modal;
+  let cancelledIds;
+  global.wx = {
+    getStorageSync() { return ''; },
+    setStorageSync() {},
+    showModal(options) {
+      modal = options;
+      options.success({ confirm: true });
+    },
+    showToast() {},
+  };
+  const definition = loadCapturePage({
+    cancelImages(imageIds) {
+      cancelledIds = imageIds;
+      return Promise.resolve({ cancelled_image_ids: imageIds });
+    },
+  });
+  const page = createCapturePage(definition);
+  page.data.backgroundUploads = [
+    { imageId: 'review-1', status: 'needs_review' },
+    { imageId: 'failed-1', status: 'failed' },
+  ];
+
+  try {
+    await page.onRemoveBackgroundTap({ currentTarget: { dataset: { imageId: 'review-1' } } });
+
+    assert.equal(modal.content, '待确认题将不收录；已自动收录的错题会保留。');
+    assert.deepEqual(cancelledIds, ['review-1']);
+    assert.deepEqual(page.data.backgroundUploads, [
+      { imageId: 'failed-1', status: 'failed' },
+    ]);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture bulk removal cancels every visible background task', async () => {
+  let cancelledIds;
+  global.wx = {
+    getStorageSync() { return ''; },
+    setStorageSync() {},
+    showModal(options) { options.success({ confirm: true }); },
+    showToast() {},
+  };
+  const definition = loadCapturePage({
+    cancelImages(imageIds) {
+      cancelledIds = imageIds;
+      return Promise.resolve({ cancelled_image_ids: imageIds });
+    },
+  });
+  const page = createCapturePage(definition);
+  page.data.backgroundUploads = [
+    { imageId: 'failed-1', status: 'failed' },
+    { imageId: 'review-1', status: 'needs_review' },
+  ];
+
+  try {
+    await page.onClearAllBackgroundTasks();
+
+    assert.deepEqual(cancelledIds, ['failed-1', 'review-1']);
+    assert.deepEqual(page.data.backgroundUploads, []);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});

@@ -260,6 +260,53 @@ Page({
   onBackgroundRetryTap(e) {
     return this.retryImage(e.currentTarget.dataset.imageId);
   },
+  onRemoveBackgroundTap(e) {
+    return this.confirmCancelImages([e.currentTarget.dataset.imageId]);
+  },
+  onClearAllBackgroundTasks() {
+    return this.confirmCancelImages(
+      this.data.backgroundUploads.map(item => item.imageId)
+    );
+  },
+  confirmCancelImages(imageIds) {
+    const uniqueImageIds = [...new Set(imageIds.filter(Boolean))];
+    if (!uniqueImageIds.length) return Promise.resolve();
+    const selectedUploads = this.data.backgroundUploads.filter(
+      item => uniqueImageIds.includes(item.imageId)
+    );
+    const hasNeedsReview = selectedUploads.some(item => item.status === 'needs_review');
+    const content = hasNeedsReview
+      ? '待确认题将不收录；已自动收录的错题会保留。'
+      : '这会取消所选图片任务，之后不再显示。';
+    return new Promise(resolve => {
+      wx.showModal({
+        title: uniqueImageIds.length > 1 ? '批量移除任务' : '移除任务',
+        content,
+        confirmText: '确认移除',
+        success: result => {
+          if (!result.confirm) {
+            resolve();
+            return;
+          }
+          api.cancelImages(uniqueImageIds).then(response => {
+            const cancelledIds = new Set(response.cancelled_image_ids || []);
+            this.setData({
+              uploads: this.data.uploads.filter(item => !cancelledIds.has(item.imageId)),
+              backgroundUploads: this.data.backgroundUploads.filter(
+                item => !cancelledIds.has(item.imageId)
+              ),
+            });
+            this.persistBackgroundUploads();
+            wx.showToast({ title: '任务已移除', icon: 'success' });
+            resolve(response);
+          }).catch(error => {
+            wx.showToast({ title: error.message || '任务移除失败，请稍后重试', icon: 'none' });
+            resolve();
+          });
+        },
+      });
+    });
+  },
   showFailureReason(e) {
     const message = e.currentTarget.dataset.message || FAILURE_REASON_FALLBACK;
     wx.showModal({ title: '识别失败', content: message, showCancel: false });

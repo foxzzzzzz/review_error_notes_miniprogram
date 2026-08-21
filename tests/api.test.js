@@ -122,7 +122,7 @@ test('image upload sends subject and school settings as form data', async () => 
 });
 
 
-test('image status wrappers request only the specified image IDs and retry one image', async () => {
+test('image status wrappers request only the specified image IDs, retry, and cancel tasks', async () => {
   const calls = [];
   const api = loadApi({
     request(options) {
@@ -133,11 +133,15 @@ test('image status wrappers request only the specified image IDs and retry one i
 
   await api.getImageStatuses(['image-1', 'image-2']);
   await api.retryImage('image-1');
+  await api.cancelImages(['image-1', 'image-2']);
 
   assert.equal(calls[0].url.endsWith('/upload/images/status?image_ids=image-1&image_ids=image-2'), true);
   assert.equal(calls[0].method, 'GET');
   assert.equal(calls[1].url.endsWith('/upload/images/image-1/retry'), true);
   assert.equal(calls[1].method, 'POST');
+  assert.equal(calls[2].url.endsWith('/upload/images/cancel'), true);
+  assert.equal(calls[2].method, 'POST');
+  assert.deepEqual(calls[2].data, { image_ids: ['image-1', 'image-2'] });
 });
 
 

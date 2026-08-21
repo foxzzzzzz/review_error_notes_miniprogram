@@ -182,6 +182,10 @@ const retryImage = imageId => (
   request(`/upload/images/${encodeURIComponent(imageId)}/retry`, { method: 'POST' })
 );
 
+const cancelImages = imageIds => (
+  request('/upload/images/cancel', { method: 'POST', data: { image_ids: imageIds } })
+);
+
 const downloadAvatar = (_path) => (
   new Promise((resolve, reject) => {
     wx.downloadFile({
@@ -242,6 +246,7 @@ module.exports = {
   getImageStatuses,
   listIncompleteImageStatuses,
   retryImage,
+  cancelImages,
   listQuestions: (params = {}) => {
     const qs = Object.keys(params)
       .filter(k => params[k] != null)
