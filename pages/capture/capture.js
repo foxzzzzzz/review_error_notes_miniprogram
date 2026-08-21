@@ -1,6 +1,7 @@
 const api = require('../../utils/api');
 
 const BACKGROUND_UPLOADS_KEY = 'captureBackgroundUploads';
+const FAILURE_REASON_FALLBACK = '识别暂时失败，请稍后重试';
 const isActiveStatus = status => ['pending', 'processing', 'segmented'].includes(status);
 const backgroundUploadsStorageKey = () => {
   if (typeof wx === 'undefined' || typeof wx.getStorageSync !== 'function') {
@@ -59,7 +60,9 @@ Page({
     return api.getProfile()
       .then(profile => {
         this.applyStudentProfile(profile);
-        return this.refreshImageStatuses({ includeNeedsReview: true })
+        return this.syncIncompleteImageStatuses()
+          .catch(() => [])
+          .then(() => this.refreshImageStatuses({ includeNeedsReview: true }))
           .catch(() => [])
           .then(() => this.startStatusPolling());
       })
@@ -88,6 +91,23 @@ Page({
       backgroundUploadsStorageKey(),
       this.data.backgroundUploads.filter(shouldKeepBackgroundUpload)
     );
+  },
+  syncIncompleteImageStatuses() {
+    if (typeof api.listIncompleteImageStatuses !== 'function') return Promise.resolve([]);
+    return api.listIncompleteImageStatuses().then(statuses => {
+      const additions = statuses.map(status => ({
+        imageId: status.image_id,
+        status: status.status,
+        questionCount: status.question_count,
+        errorCode: status.error_code,
+        errorMessage: status.error_message,
+      }));
+      this.setData({
+        backgroundUploads: mergeBackgroundUploads(this.data.backgroundUploads, additions),
+      });
+      this.persistBackgroundUploads();
+      return statuses;
+    });
   },
   moveSubmittedUploadsToBackground() {
     const backgroundUploads = mergeBackgroundUploads(
@@ -239,6 +259,10 @@ Page({
   onBackgroundRetryTap(e) {
     return this.retryImage(e.currentTarget.dataset.imageId);
   },
+  showFailureReason(e) {
+    const message = e.currentTarget.dataset.message || FAILURE_REASON_FALLBACK;
+    wx.showModal({ title: '识别失败', content: message, showCancel: false });
+  },
   retryImage(imageId) {
     const findFailed = item => item.imageId === imageId && item.status === 'failed';
     if (!imageId || !this.data.uploads.concat(this.data.backgroundUploads).some(findFailed)) {
@@ -257,8 +281,8 @@ Page({
       });
       this.persistBackgroundUploads();
       return this.startStatusPolling();
-    }).catch(() => {
-      wx.showToast({ title: '重试失败，请稍后再试', icon: 'none' });
+    }).catch(error => {
+      wx.showToast({ title: error.message || FAILURE_REASON_FALLBACK, icon: 'none' });
     });
   },
   onReviewTap(e) {
@@ -297,6 +321,19 @@ Page({
               [`uploads[${idx}].status`]: result.status || 'pending',
               [`uploads[${idx}].imageId`]: result.image_id,
             });
+            const upload = this.data.uploads[idx];
+            this.setData({
+              backgroundUploads: mergeBackgroundUploads(this.data.backgroundUploads, [{
+                id: upload.id,
+                imageId: upload.imageId,
+                status: upload.status,
+                subject: upload.subject,
+                questionCount: upload.questionCount,
+                errorCode: upload.errorCode,
+                errorMessage: upload.errorMessage,
+              }]),
+            });
+            this.persistBackgroundUploads();
           }).catch(error => {
             this.setData({ [`uploads[${idx}].status`]: 'failed' });
             throw error;

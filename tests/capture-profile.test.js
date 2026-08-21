@@ -553,3 +553,157 @@ test('capture does not schedule polling after the page is hidden during a status
     delete require.cache[apiPath];
   }
 });
+
+
+test('capture shows the backend failure reason when failed status is tapped', () => {
+  const modals = [];
+  global.wx = { showModal(options) { modals.push(options); } };
+  const definition = loadCapturePage({});
+  const page = createCapturePage(definition);
+
+  try {
+    page.showFailureReason({ currentTarget: { dataset: {
+      message: '识别服务响应超时，请稍后重试',
+      imageId: 'image-1',
+    } } });
+
+    assert.deepEqual(modals, [{
+      title: '识别失败',
+      content: '识别服务响应超时，请稍后重试',
+      showCancel: false,
+    }]);
+    assert.equal(modals[0].content.includes('image-1'), false);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture falls back to a safe failure reason when no message is available', () => {
+  const modals = [];
+  global.wx = { showModal(options) { modals.push(options); } };
+  const definition = loadCapturePage({});
+  const page = createCapturePage(definition);
+
+  try {
+    page.showFailureReason({ currentTarget: { dataset: {} } });
+
+    assert.equal(modals[0].content, '识别暂时失败，请稍后重试');
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture persists a submitted image immediately after upload succeeds', async () => {
+  const stored = {};
+  global.wx = {
+    getStorageSync: key => key === 'studentId' ? 'student-1' : '',
+    setStorageSync(key, value) { stored[key] = value; },
+    showToast() {},
+  };
+  const definition = loadCapturePage({
+    uploadImage: () => Promise.resolve({ image_id: 'image-1', status: 'pending' }),
+  });
+  const page = createCapturePage(definition, [{
+    id: 'local-1', path: '/tmp/question.jpg', status: 'pending', subject: 'chinese',
+  }]);
+  page.startStatusPolling = () => Promise.resolve();
+
+  try {
+    await page.uploadPending();
+
+    assert.deepEqual(stored['captureBackgroundUploads:student-1'].map(item => item.imageId), ['image-1']);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture restores incomplete server tasks when local cache is empty', async () => {
+  global.wx = {
+    getStorageSync(key) { return key === 'token' ? 'token' : ''; },
+    setStorageSync() {},
+    showToast() {},
+  };
+  const definition = loadCapturePage({
+    getProfile: () => Promise.resolve({ grade: 1, semester: 1 }),
+    listIncompleteImageStatuses: () => Promise.resolve([{
+      image_id: 'image-1',
+      status: 'failed',
+      question_count: 0,
+      error_code: 'vision_timeout',
+      error_message: '识别服务响应超时，请稍后重试',
+    }]),
+    getImageStatuses: () => Promise.resolve([]),
+  });
+  const page = createCapturePage(definition);
+
+  try {
+    await page.onShow();
+
+    assert.deepEqual(page.data.backgroundUploads, [{
+      imageId: 'image-1',
+      status: 'failed',
+      questionCount: 0,
+      errorCode: 'vision_timeout',
+      errorMessage: '识别服务响应超时，请稍后重试',
+    }]);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture restores a retried failed image after a later page recreation', async () => {
+  global.wx = {
+    getStorageSync(key) { return key === 'token' ? 'token' : ''; },
+    setStorageSync() {},
+    showToast() {},
+  };
+  const apiOverrides = {
+    getProfile: () => Promise.resolve({ grade: 1, semester: 1 }),
+    retryImage: () => Promise.resolve({ image_id: 'image-1', status: 'pending' }),
+    listIncompleteImageStatuses: () => Promise.resolve([{
+      image_id: 'image-1',
+      status: 'pending',
+      question_count: 0,
+      error_code: null,
+      error_message: null,
+    }]),
+    getImageStatuses: () => Promise.resolve([]),
+  };
+  const firstDefinition = loadCapturePage(apiOverrides);
+  const firstPage = createCapturePage(firstDefinition);
+  firstPage.data.backgroundUploads = [{ imageId: 'image-1', status: 'failed' }];
+  firstPage.startStatusPolling = () => Promise.resolve();
+
+  try {
+    await firstPage.retryImage('image-1');
+
+    const secondDefinition = loadCapturePage(apiOverrides);
+    const secondPage = createCapturePage(secondDefinition);
+    secondPage.startStatusPolling = () => Promise.resolve();
+    await secondPage.onShow();
+
+    assert.equal(secondPage.data.backgroundUploads[0].imageId, 'image-1');
+    assert.equal(secondPage.data.backgroundUploads[0].status, 'pending');
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});

@@ -176,6 +176,8 @@ const getImageStatuses = (imageIds) => {
   return request(`/upload/images/status?${query}`);
 };
 
+const listIncompleteImageStatuses = () => request('/upload/images/incomplete');
+
 const retryImage = imageId => (
   request(`/upload/images/${encodeURIComponent(imageId)}/retry`, { method: 'POST' })
 );
@@ -238,6 +240,7 @@ module.exports = {
   }),
   uploadImage,
   getImageStatuses,
+  listIncompleteImageStatuses,
   retryImage,
   listQuestions: (params = {}) => {
     const qs = Object.keys(params)
