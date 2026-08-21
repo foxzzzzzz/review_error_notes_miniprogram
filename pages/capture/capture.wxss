@@ -107,6 +107,47 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
+.background-task-card {
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.background-task-top,
+.background-task-bottom,
+.background-task-actions {
+  display: flex;
+  align-items: center;
+}
+
+.background-task-top {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.background-task-bottom {
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 12px;
+}
+
+.background-task-subject {
+  min-width: 0;
+  color: #6d796e;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.background-task-actions {
+  flex: none;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .background-heading-actions {
   display: flex;
   align-items: center;
@@ -206,6 +247,17 @@
   background: transparent;
   font-size: 12px;
   line-height: 20px;
+}
+
+.background-task-actions .retry-btn {
+  flex: none;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.background-task-actions .remove-btn {
+  flex: none;
+  white-space: nowrap;
 }
 
 .retry-btn::after {

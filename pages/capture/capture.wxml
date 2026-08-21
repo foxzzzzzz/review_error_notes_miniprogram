@@ -47,21 +47,19 @@
       </view>
     </view>
     <view wx:if="{{showBackgroundUploads}}">
-      <view class="upload-item" wx:for="{{backgroundUploads}}" wx:key="imageId">
-        <view class="upload-region upload-page-region">
+      <view class="background-task-card" wx:for="{{backgroundUploads}}" wx:key="imageId">
+        <view class="background-task-top">
           <text class="upload-page">已提交图片</text>
+          <text wx:if="{{item.status === 'failed'}}" class="status status-failed failed-status-link" bindtap="showFailureReason" data-message="{{item.errorMessage}}">{{statusText[item.status]}}</text>
+          <text wx:else class="status status-{{item.status}}">{{item.status === 'confirmed' && item.questionCount === 0 ? '处理完成（未发现错题）' : statusText[item.status]}}</text>
         </view>
-        <view class="upload-region upload-status-region">
-          <view class="status-action">
-            <text wx:if="{{item.status === 'failed'}}" class="status status-failed failed-status-link" bindtap="showFailureReason" data-message="{{item.errorMessage}}">{{statusText[item.status]}}</text>
-            <text wx:else class="status status-{{item.status}}">{{item.status === 'confirmed' && item.questionCount === 0 ? '处理完成（未发现错题）' : statusText[item.status]}}</text>
+        <view class="background-task-bottom">
+          <text class="background-task-subject">{{item.subject ? (subjectMap[item.subject] || item.subject) : '未设置科目'}}</text>
+          <view class="background-task-actions">
             <button wx:if="{{item.status === 'failed'}}" class="retry-btn" bindtap="onBackgroundRetryTap" data-image-id="{{item.imageId}}">重试</button>
             <button wx:if="{{item.status === 'needs_review'}}" class="review-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">去确认</button>
             <button class="remove-btn" bindtap="onRemoveBackgroundTap" data-image-id="{{item.imageId}}">移除</button>
           </view>
-        </view>
-        <view class="upload-region upload-subject-region">
-          <text>{{item.subject ? (subjectMap[item.subject] || item.subject) : '未设置科目'}}</text>
         </view>
       </view>
     </view>

@@ -462,6 +462,19 @@ test('capture renders the review action as a no-wrap inline status action', () =
   assert.match(styles, /\.review-btn\s*\{[\s\S]*white-space:\s*nowrap/);
 });
 
+
+test('capture renders background jobs as two-line cards with no-wrap actions', () => {
+  const template = fs.readFileSync(path.resolve(__dirname, '..', 'pages', 'capture', 'capture.wxml'), 'utf8');
+  const styles = fs.readFileSync(path.resolve(__dirname, '..', 'pages', 'capture', 'capture.wxss'), 'utf8');
+
+  assert.match(template, /class="background-task-card"/);
+  assert.match(template, /class="background-task-top"/);
+  assert.match(template, /class="background-task-bottom"/);
+  assert.match(template, /class="background-task-actions"/);
+  assert.match(styles, /\.background-task-actions\s*\{[\s\S]*white-space:\s*nowrap/);
+  assert.match(styles, /\.background-task-actions\s+\.retry-btn\s*\{[\s\S]*white-space:\s*nowrap/);
+});
+
 test('capture polls more than nine active images in API-sized batches', async () => {
   const requestedIds = [];
   global.wx = { setStorageSync() {} };
