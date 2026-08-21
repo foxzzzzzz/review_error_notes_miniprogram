@@ -1,0 +1,4 @@
+# WeChat Mini Program local build and IDE state
+assets/
+project.config.json.bak
+project.private.config.json
