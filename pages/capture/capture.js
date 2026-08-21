@@ -87,9 +87,10 @@ Page({
   },
   persistBackgroundUploads() {
     if (typeof wx === 'undefined' || typeof wx.setStorageSync !== 'function') return;
+    const uploadsToRestore = this.data.uploads.filter(item => item.imageId);
     wx.setStorageSync(
       backgroundUploadsStorageKey(),
-      this.data.backgroundUploads.filter(shouldKeepBackgroundUpload)
+      mergeBackgroundUploads(this.data.backgroundUploads, uploadsToRestore)
     );
   },
   syncIncompleteImageStatuses() {
@@ -320,18 +321,6 @@ Page({
             this.setData({
               [`uploads[${idx}].status`]: result.status || 'pending',
               [`uploads[${idx}].imageId`]: result.image_id,
-            });
-            const upload = this.data.uploads[idx];
-            this.setData({
-              backgroundUploads: mergeBackgroundUploads(this.data.backgroundUploads, [{
-                id: upload.id,
-                imageId: upload.imageId,
-                status: upload.status,
-                subject: upload.subject,
-                questionCount: upload.questionCount,
-                errorCode: upload.errorCode,
-                errorMessage: upload.errorMessage,
-              }]),
             });
             this.persistBackgroundUploads();
           }).catch(error => {

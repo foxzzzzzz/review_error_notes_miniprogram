@@ -620,6 +620,7 @@ test('capture persists a submitted image immediately after upload succeeds', asy
     await page.uploadPending();
 
     assert.deepEqual(stored['captureBackgroundUploads:student-1'].map(item => item.imageId), ['image-1']);
+    assert.deepEqual(page.data.backgroundUploads, []);
   } finally {
     delete global.wx;
     delete global.Page;
