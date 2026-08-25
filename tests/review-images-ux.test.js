@@ -16,10 +16,16 @@ test('review page loads crop images only on demand and explains why confirmation
   assert.match(template, /bindtap="loadCrop"/);
 });
 
-test('review page labels an empty student answer as unanswered', () => {
-  const template = read('pages/review-images/review-images.wxml');
+test('question list and review page highlight an empty student answer', () => {
+  const questionsTemplate = read('pages/questions/questions.wxml');
+  const reviewTemplate = read('pages/review-images/review-images.wxml');
+  const questionsStyles = read('pages/questions/questions.wxss');
+  const reviewStyles = read('pages/review-images/review-images.wxss');
 
-  assert.match(template, /item\.ocr_text \|\| '未作答'/);
+  assert.match(questionsTemplate, /class="[^"]*empty-answer[^"]*"[^>]*>【空白】/);
+  assert.match(reviewTemplate, /class="[^"]*empty-answer[^"]*"[^>]*>【空白】/);
+  assert.match(questionsStyles, /\.empty-answer[\s\S]*color:\s*#c77700/);
+  assert.match(reviewStyles, /\.empty-answer[\s\S]*color:\s*#c77700/);
 });
 
 test('question list displays the number of pending review questions', () => {

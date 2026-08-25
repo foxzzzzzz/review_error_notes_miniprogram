@@ -53,7 +53,8 @@
         </view>
         <text class="status">{{item.statusText}}</text>
       </view>
-      <text class="card-text">{{item.ocr_text || '待识别...'}}</text>
+      <text wx:if="{{item.ocr_text}}" class="card-text">{{item.ocr_text}}</text>
+      <text wx:else class="card-text empty-answer">【空白】</text>
       <view class="card-tags">
         <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="t">#{{t}}</text>
       </view>

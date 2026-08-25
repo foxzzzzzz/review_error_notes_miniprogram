@@ -10,6 +10,7 @@
 .source-title, .source-copy, .label { display: block; }
 .source-title { color: #765615; font-weight: 600; }
 .source-copy, .label { margin-top: 6px; color: #8d805f; font-size: 12px; }
+.empty-answer { color: #c77700; font-size: 14px; line-height: 1.6; }
 .original { width: 100%; margin-top: 10px; border-radius: 6px; }
 .bulk-actions, .decision-row { display: flex; gap: 8px; margin-bottom: 12px; }
 .bulk-actions button, .decision-row button { flex: 1; margin: 0; font-size: 13px; background: #fff; color: #666; }

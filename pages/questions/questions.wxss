@@ -163,6 +163,10 @@
   -webkit-box-orient: vertical;
 }
 
+.empty-answer {
+  color: #c77700;
+}
+
 .card-tags {
   display: flex;
   flex-wrap: wrap;
