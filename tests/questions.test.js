@@ -347,7 +347,7 @@ test('questions page formatter safely handles invalid input and Beijing calendar
   }
 });
 
-test('questions page combines subject, tag, and time filters in one request', async () => {
+test('questions page combines subject, keyword, and time filters in one request', async () => {
   const api = require(apiPath);
   const originalListQuestions = api.listQuestions;
   const requests = [];
@@ -380,7 +380,7 @@ test('questions page combines subject, tag, and time filters in one request', as
       limit: 20,
       offset: 0,
       subject: 'math',
-      tag: 'geometry',
+      keyword: 'geometry',
     });
     assert.ok([createdFromBefore, createdFromAfter].includes(actualCreatedFrom));
   } finally {

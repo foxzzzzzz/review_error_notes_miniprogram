@@ -12,7 +12,7 @@
   </view>
 
   <view class="filters">
-    <input placeholder="搜索标签" bindconfirm="onSearch" />
+    <input value="{{keyword}}" placeholder="搜索错答、正确答案或标签" bindconfirm="onSearch" />
   </view>
 
   <scroll-view scroll-x class="filter-scroll" enable-flex>

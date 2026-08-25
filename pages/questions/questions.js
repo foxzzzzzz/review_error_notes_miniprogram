@@ -66,8 +66,7 @@ Page({
     subject: null,
     subjectFilter: null,
     timeFilter: '',
-    tag: '',
-    tagFilter: '',
+    keyword: '',
     statusFilter: '',
     masteryFilter: '',
     createdFromOverride: '',
@@ -110,8 +109,7 @@ Page({
         subject: null,
         subjectFilter: null,
         timeFilter: '',
-        tag: '',
-        tagFilter: '',
+        keyword: '',
         statusFilter: entryFilter.status || '',
         masteryFilter: entryFilter.mastery_status || '',
         createdFromOverride: entryFilter.created_from || '',
@@ -178,7 +176,7 @@ Page({
     this._isQuestionLoading = true;
     const params = { limit: PAGE_SIZE, offset };
     if (this.data.subjectFilter) params.subject = this.data.subjectFilter;
-    if (this.data.tagFilter) params.tag = this.data.tagFilter;
+    if (this.data.keyword) params.keyword = this.data.keyword;
     if (this.data.statusFilter) params.status = this.data.statusFilter;
     if (this.data.masteryFilter) params.mastery_status = this.data.masteryFilter;
     if (this.data.createdFromOverride) {
@@ -245,8 +243,8 @@ Page({
     return this.load({ reset: true });
   },
   onSearch(e) {
-    const tag = e.detail.value;
-    this.setData({ tag, tagFilter: tag });
+    const keyword = e.detail.value.trim();
+    this.setData({ keyword });
     return this.load({ reset: true });
   },
   onClearEntryFilter() {
