@@ -89,7 +89,7 @@ Page({
     stats: {
       total: 0,
       monthNew: 0,
-      needsReview: 0,
+      learning: 0,
       mastered: 0,
     },
   },
@@ -157,7 +157,7 @@ Page({
       stats: {
         total: stats.total || 0,
         monthNew: stats.month_new || 0,
-        needsReview: stats.needs_review || 0,
+        learning: stats.learning || 0,
         mastered: stats.mastered || 0,
       },
     });
@@ -290,9 +290,9 @@ Page({
         label: '本月新增',
         created_from: getBeijingMonthStart(),
       },
-      needsReview: {
+      learning: {
         label: '待复习',
-        status: 'needs_review',
+        mastery_status: 'learning',
       },
       mastered: {
         label: '已掌握',

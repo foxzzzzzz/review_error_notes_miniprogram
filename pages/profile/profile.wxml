@@ -70,8 +70,8 @@
           <view class="stat-value">{{stats.monthNew}}</view>
           <view class="stat-label">本月新增</view>
         </view>
-        <view class="stat-card" data-filter="needsReview" bindtap="onStatTap">
-          <view class="stat-value">{{stats.needsReview}}</view>
+        <view class="stat-card" data-filter="learning" bindtap="onStatTap">
+          <view class="stat-value">{{stats.learning}}</view>
           <view class="stat-label">待复习</view>
         </view>
         <view class="stat-card stat-mastered" data-filter="mastered" bindtap="onStatTap">

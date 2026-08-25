@@ -458,7 +458,7 @@ test('profile page maps backend profile prompt and statistics', async () => {
       student_profile_required: false,
       phone_bound: false,
       phone_masked: '',
-      stats: { total: 8, month_new: 3, needs_review: 6, mastered: 2 },
+      stats: { total: 8, month_new: 3, learning: 6, mastered: 2 },
     },
     apiOverrides: {
       downloadAvatar(path) {
@@ -482,7 +482,7 @@ test('profile page maps backend profile prompt and statistics', async () => {
     assert.deepEqual(page.data.stats, {
       total: 8,
       monthNew: 3,
-      needsReview: 6,
+      learning: 6,
       mastered: 2,
     });
   } finally {
@@ -599,7 +599,7 @@ test('profile statistics navigate to matching question filters', () => {
   try {
     const cases = [
       ['total', { label: '全部错题' }],
-      ['needsReview', { label: '待复习', status: 'needs_review' }],
+      ['learning', { label: '待复习', mastery_status: 'learning' }],
       ['mastered', { label: '已掌握', mastery_status: 'mastered' }],
     ];
     for (const [filter, expected] of cases) {
