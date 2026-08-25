@@ -16,6 +16,12 @@ test('review page loads crop images only on demand and explains why confirmation
   assert.match(template, /bindtap="loadCrop"/);
 });
 
+test('review page labels an empty student answer as unanswered', () => {
+  const template = read('pages/review-images/review-images.wxml');
+
+  assert.match(template, /item\.ocr_text \|\| '未作答'/);
+});
+
 test('question list displays the number of pending review questions', () => {
   const script = read('pages/questions/questions.js');
   const template = read('pages/questions/questions.wxml');

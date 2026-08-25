@@ -26,7 +26,7 @@
       <button wx:elif="{{!item.cropLoading}}" class="load-crop" data-id="{{item.id}}" bindtap="loadCrop">查看题目裁剪图</button>
       <text wx:else class="crop-loading">题目图片加载中...</text>
       <text class="question-title">题目{{index + 1}}</text>
-      <text class="label">学生作答</text><text>{{item.ocr_text}}</text>
+      <text class="label">学生作答</text><text>{{item.ocr_text || '未作答'}}</text>
       <text class="label">参考答案</text><text>{{item.ocr_answer || '暂无可靠答案'}}</text>
       <text wx:if="{{item.ocr_raw_json.collection_reason}}" class="review-reason">待确认原因：{{item.ocr_raw_json.collection_reason}}</text>
       <view class="decision-row">
