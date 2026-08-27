@@ -82,7 +82,8 @@ test('capture blocks upload until student settings are saved, then resumes once'
 
     assert.equal(profileUpdates, 1);
     assert.equal(uploads, 1);
-    assert.equal(page.data.uploads[0].status, 'pending');
+    assert.equal(page.data.uploads.length, 0);
+    assert.equal(page.data.backgroundUploads[0].status, 'pending');
     assert.equal(page.data.resumeSubmitAfterSettings, false);
   } finally {
     delete global.wx;
@@ -614,7 +615,7 @@ test('capture falls back to a safe failure reason when no message is available',
 });
 
 
-test('capture persists a submitted image immediately after upload succeeds', async () => {
+test('capture moves a submitted image from the current batch to background tasks', async () => {
   const stored = {};
   global.wx = {
     getStorageSync: key => key === 'studentId' ? 'student-1' : '',
@@ -633,7 +634,90 @@ test('capture persists a submitted image immediately after upload succeeds', asy
     await page.uploadPending();
 
     assert.deepEqual(stored['captureBackgroundUploads:student-1'].map(item => item.imageId), ['image-1']);
-    assert.deepEqual(page.data.backgroundUploads, []);
+    assert.deepEqual(page.data.uploads, []);
+    assert.deepEqual(page.data.backgroundUploads.map(item => item.imageId), ['image-1']);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture keeps only failed local images in the current batch after a partial upload failure', async () => {
+  global.wx = {
+    getStorageSync: key => key === 'studentId' ? 'student-1' : '',
+    setStorageSync() {},
+    showToast() {},
+  };
+  const definition = loadCapturePage({
+    uploadImage: filePath => (
+      filePath === '/tmp/accepted.jpg'
+        ? Promise.resolve({ image_id: 'image-1', status: 'pending' })
+        : Promise.reject(new Error('network failure'))
+    ),
+  });
+  const page = createCapturePage(definition, [
+    { id: 'accepted', path: '/tmp/accepted.jpg', status: 'pending', subject: 'chinese' },
+    { id: 'failed', path: '/tmp/failed.jpg', status: 'pending', subject: 'chinese' },
+  ]);
+  page.startStatusPolling = () => Promise.resolve();
+
+  try {
+    await page.uploadPending();
+
+    assert.deepEqual(page.data.backgroundUploads.map(item => item.imageId), ['image-1']);
+    assert.deepEqual(page.data.uploads.map(item => [item.id, item.status]), [['failed', 'failed']]);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture moves a legacy submitted current-batch entry to background tasks on restore', () => {
+  global.wx = {
+    getStorageSync: key => key === 'captureBackgroundUploads' ? [{
+      id: 'legacy', imageId: 'image-1', status: 'needs_review', subject: 'chinese',
+    }] : '',
+    setStorageSync() {},
+  };
+  const definition = loadCapturePage({});
+  const page = createCapturePage(definition, [{
+    id: 'legacy', imageId: 'image-1', status: 'needs_review', subject: 'chinese',
+  }]);
+
+  try {
+    page.restoreBackgroundUploads();
+
+    assert.deepEqual(page.data.uploads, []);
+    assert.deepEqual(page.data.backgroundUploads.map(item => item.imageId), ['image-1']);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture removes a legacy submitted current-batch entry when no cache remains', () => {
+  global.wx = {
+    getStorageSync() { return ''; },
+    setStorageSync() {},
+  };
+  const definition = loadCapturePage({});
+  const page = createCapturePage(definition, [{
+    id: 'legacy', imageId: 'image-1', status: 'needs_review', subject: 'chinese',
+  }]);
+
+  try {
+    page.restoreBackgroundUploads();
+
+    assert.deepEqual(page.data.uploads, []);
   } finally {
     delete global.wx;
     delete global.Page;

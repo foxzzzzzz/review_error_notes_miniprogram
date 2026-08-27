@@ -77,20 +77,18 @@ Page({
   },
   restoreBackgroundUploads() {
     const savedUploads = wx.getStorageSync(backgroundUploadsStorageKey());
-    if (!Array.isArray(savedUploads)) return;
     this.setData({
-      backgroundUploads: mergeBackgroundUploads(
-        this.data.backgroundUploads,
-        savedUploads
-      ),
+      uploads: this.data.uploads.filter(item => !item.imageId),
+      backgroundUploads: Array.isArray(savedUploads)
+        ? mergeBackgroundUploads(this.data.backgroundUploads, savedUploads)
+        : this.data.backgroundUploads,
     });
   },
   persistBackgroundUploads() {
     if (typeof wx === 'undefined' || typeof wx.setStorageSync !== 'function') return;
-    const uploadsToRestore = this.data.uploads.filter(item => item.imageId);
     wx.setStorageSync(
       backgroundUploadsStorageKey(),
-      mergeBackgroundUploads(this.data.backgroundUploads, uploadsToRestore)
+      this.data.backgroundUploads.filter(shouldKeepBackgroundUpload)
     );
   },
   syncIncompleteImageStatuses() {
@@ -104,6 +102,7 @@ Page({
         errorMessage: status.error_message,
       }));
       this.setData({
+        uploads: this.data.uploads.filter(item => !item.imageId),
         backgroundUploads: mergeBackgroundUploads(this.data.backgroundUploads, additions),
       });
       this.persistBackgroundUploads();
@@ -354,36 +353,51 @@ Page({
     this.setData({ uploading: true });
     const uploads = this.data.uploads;
     const promises = [];
+    const uploadingIds = new Set();
     for (let i = 0; i < uploads.length; i++) {
       if (!uploads[i].imageId && (uploads[i].status === 'pending' || uploads[i].status === 'failed')) {
-        const idx = i;  // capture original index
+        const upload = uploads[i];
+        uploadingIds.add(upload.id);
         const metadata = {
           grade: this.data.gradeIndex + 1,
           semester: this.data.semester + 1,
         };
-        if (uploads[idx].subject) metadata.subject = uploads[idx].subject;
-        this.setData({ [`uploads[${idx}].status`]: 'processing' });
+        if (upload.subject) metadata.subject = upload.subject;
         promises.push(
-          api.uploadImage(uploads[idx].path, metadata).then(result => {
-            this.setData({
-              [`uploads[${idx}].status`]: result.status || 'pending',
-              [`uploads[${idx}].imageId`]: result.image_id,
-            });
-            this.persistBackgroundUploads();
-          }).catch(error => {
-            this.setData({ [`uploads[${idx}].status`]: 'failed' });
-            throw error;
-          })
+          api.uploadImage(upload.path, metadata)
+            .then(result => ({ upload, result }))
+            .catch(error => ({ upload, error }))
         );
       }
     }
-    return Promise.all(promises).then(() => {
+    this.setData({
+      uploads: this.data.uploads.map(item => (
+        uploadingIds.has(item.id) ? { ...item, status: 'processing' } : item
+      )),
+    });
+    return Promise.all(promises).then(results => {
+      const submittedUploads = results
+        .filter(item => !item.error)
+        .map(item => ({
+          ...item.upload,
+          imageId: item.result.image_id,
+          status: item.result.status || 'pending',
+        }));
+      const failedIds = new Set(results.filter(item => item.error).map(item => item.upload.id));
+      const submittedIds = new Set(submittedUploads.map(item => item.id));
+      this.setData({
+        uploads: this.data.uploads
+          .filter(item => !submittedIds.has(item.id))
+          .map(item => (failedIds.has(item.id) ? { ...item, status: 'failed' } : item)),
+        backgroundUploads: mergeBackgroundUploads(this.data.backgroundUploads, submittedUploads),
+        uploading: false,
+      });
+      this.persistBackgroundUploads();
       this.startStatusPolling();
-      wx.showToast({ title: '提交成功', icon: 'success' });
-      this.setData({ uploading: false });
-    }).catch(() => {
-      this.setData({ uploading: false });
-      wx.showToast({ title: '部分图片上传失败', icon: 'none' });
+      wx.showToast({
+        title: failedIds.size ? '部分图片上传失败' : '提交成功',
+        icon: failedIds.size ? 'none' : 'success',
+      });
     });
   },
   onSettingsGradeChange(e) {
