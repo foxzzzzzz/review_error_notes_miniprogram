@@ -94,6 +94,32 @@ const downloadQuestionImage = (questionId, view = 'crop', retried = false) => (
   })
 );
 
+const downloadOriginalImage = (imageId, retried = false) => (
+  new Promise((resolve, reject) => {
+    wx.downloadFile({
+      url: `${BASE_URL}/upload/images/${encodeURIComponent(imageId)}/original`,
+      header: { 'Authorization': `Bearer ${wx.getStorageSync('token') || ''}` },
+      success(res) {
+        if (res.statusCode >= 200 && res.statusCode < 300 && res.tempFilePath) {
+          resolve(res.tempFilePath);
+          return;
+        }
+        if (res.statusCode === 401 && !retried) {
+          session.retryAfterUnauthorized(
+            () => downloadOriginalImage(imageId, true)
+          ).then(resolve, reject);
+          return;
+        }
+        if (res.statusCode === 401) terminalUnauthorized();
+        reject(new ApiError(`图片加载失败 (${res.statusCode || 0})`, res.statusCode || 0));
+      },
+      fail() {
+        reject(new ApiError('图片加载失败', 0));
+      },
+    });
+  })
+);
+
 const uploadImage = (filePath, metadata = {}, retried = false) => (
   new Promise((resolve, reject) => {
     wx.uploadFile({
@@ -289,6 +315,7 @@ module.exports = {
   downloadAvatar,
   downloadSheet,
   downloadQuestionImage,
+  downloadOriginalImage,
   resolveServerUrl,
   ApiError,
 };

@@ -171,6 +171,22 @@ test('question detail method requests one question by id', async () => {
   assert.equal(result.id, 'question-7');
 });
 
+test('original image download uses the authenticated image endpoint', async () => {
+  let call;
+  const api = loadApi({
+    downloadFile(options) {
+      call = options;
+      options.success({ statusCode: 200, tempFilePath: 'wxfile://original.jpg' });
+    },
+  });
+
+  const result = await api.downloadOriginalImage('image 7');
+
+  assert.equal(call.url.endsWith('/upload/images/image%207/original'), true);
+  assert.equal(call.header.Authorization, 'Bearer test-token');
+  assert.equal(result, 'wxfile://original.jpg');
+});
+
 
 test('server URL resolver expands relative file paths', () => {
   const api = loadApi();

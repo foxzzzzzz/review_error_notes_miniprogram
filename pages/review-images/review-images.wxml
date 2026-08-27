@@ -6,22 +6,33 @@
       <view class="group-tabs">
         <view wx:for="{{groups}}" wx:key="image_id" data-index="{{index}}" bindtap="onGroupTap" class="group-tab {{activeIndex === index ? 'active' : ''}}">
           <image wx:if="{{item.thumbnailPath}}" class="group-thumbnail" src="{{item.thumbnailPath}}" mode="aspectFill" />
-          <text>第{{index + 1}}张 · {{item.question_count}}题</text>
+          <text>第{{index + 1}}张 · {{item.group_type === 'image_issue' ? '待处理' : item.question_count + '题'}}</text>
         </view>
       </view>
     </scroll-view>
     <view class="source-card" bindtap="previewOriginal">
-      <text class="source-title">同一张原图中的待确认题目</text>
-      <text class="source-summary">本图已自动收录{{currentGroup.auto_collected_count}}题，另有{{currentGroup.question_count}}题需要你确认</text>
+      <text class="source-title">{{currentGroup.group_type === 'image_issue' ? '待恢复的原图' : '同一张原图中的待确认题目'}}</text>
+      <text wx:if="{{currentGroup.group_type !== 'image_issue'}}" class="source-summary">本图已自动收录{{currentGroup.auto_collected_count}}题，另有{{currentGroup.question_count}}题需要你确认</text>
       <image wx:if="{{originalImagePath}}" class="original" src="{{originalImagePath}}" mode="widthFix" />
       <text class="source-copy">点击查看整张原图，可放大对照全部题目</text>
     </view>
-    <view class="bulk-actions">
-      <button data-decision="collect" bindtap="decideAll">全部收录为错题</button>
-      <button data-decision="ignore" bindtap="decideAll">全部不收录</button>
+    <view wx:if="{{currentGroup.group_type === 'image_issue'}}" class="issue-card">
+      <text class="issue-title">未能可靠定位错题</text>
+      <text class="issue-message">{{currentGroup.issue_message || '系统检测到批改痕迹，但没有找到可确认的错题区域。'}}</text>
+      <button disabled="{{saving}}" bindtap="onRetryMarks">重新识别红标</button>
+      <button disabled="{{saving}}" bindtap="onForceUnmarked">按无红标作业分析</button>
+      <view class="secondary-actions">
+        <button disabled="{{saving}}" bindtap="onRetake">重新拍摄</button>
+        <button disabled="{{saving}}" bindtap="onCancelImage">不处理此图</button>
+      </view>
     </view>
-    <button class="reprocess" disabled="{{saving}}" bindtap="onReprocessTap">本图识别不准确</button>
-    <view class="question-card" wx:for="{{currentGroup.questions}}" wx:key="id">
+    <block wx:else>
+      <view class="bulk-actions">
+        <button data-decision="collect" bindtap="decideAll">全部收录为错题</button>
+        <button data-decision="ignore" bindtap="decideAll">全部不收录</button>
+      </view>
+      <button class="reprocess" disabled="{{saving}}" bindtap="onReprocessTap">本图识别不准确</button>
+      <view class="question-card" wx:for="{{currentGroup.questions}}" wx:key="id">
       <image wx:if="{{item.cropImagePath}}" class="crop" src="{{item.cropImagePath}}" mode="widthFix" data-path="{{item.cropImagePath}}" bindtap="previewCrop" />
       <button wx:elif="{{!item.cropLoading}}" class="load-crop" data-id="{{item.id}}" bindtap="loadCrop">查看题目裁剪图</button>
       <text wx:else class="crop-loading">题目图片加载中...</text>
@@ -35,7 +46,8 @@
         <button class="{{item.decision === 'collect' ? 'selected collect' : ''}}" data-id="{{item.id}}" data-decision="collect" bindtap="onDecisionTap">收录为错题</button>
         <button class="{{item.decision === 'ignore' ? 'selected ignore' : ''}}" data-id="{{item.id}}" data-decision="ignore" bindtap="onDecisionTap">不收录</button>
       </view>
-    </view>
-    <button class="submit" loading="{{saving}}" disabled="{{saving}}" bindtap="submitGroup">确认本页决定</button>
+      </view>
+      <button class="submit" loading="{{saving}}" disabled="{{saving}}" bindtap="submitGroup">确认本页决定</button>
+    </block>
   </block>
 </view>

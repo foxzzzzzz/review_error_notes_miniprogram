@@ -60,3 +60,17 @@ test('review page loads only the active group original image on first open', () 
   assert.doesNotMatch(script, /Promise\.all\(prepared\.map/);
   assert.match(script, /loadGroupOriginal/);
 });
+
+test('image issue group renders recovery actions without empty bulk decisions', () => {
+  const script = read('pages/review-images/review-images.js');
+  const template = read('pages/review-images/review-images.wxml');
+
+  assert.match(template, /currentGroup\.group_type === 'image_issue'/);
+  assert.match(template, /未能可靠定位错题/);
+  assert.match(template, /重新识别红标/);
+  assert.match(template, /按无红标作业分析/);
+  assert.match(script, /force_unmarked/);
+  assert.match(script, /missed_errors/);
+  assert.match(script, /downloadOriginalImage/);
+  assert.match(script, /cancelImages/);
+});

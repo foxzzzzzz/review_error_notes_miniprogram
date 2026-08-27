@@ -19,7 +19,7 @@ Page({
       const prepared = groups.map(group => ({
         ...group,
         thumbnailPath: '',
-        questions: group.questions.map(question => ({
+        questions: (group.questions || []).map(question => ({
           ...question,
           decision: '',
           cropImagePath: '',
@@ -48,9 +48,12 @@ Page({
   },
   loadGroupOriginal(index) {
     const group = this.data.groups[index];
-    if (!group || !group.questions.length) return Promise.resolve('');
+    if (!group) return Promise.resolve('');
     if (group.thumbnailPath) return Promise.resolve(group.thumbnailPath);
-    return api.downloadQuestionImage(group.questions[0].id, 'original').then(thumbnailPath => {
+    const download = group.group_type === 'image_issue'
+      ? api.downloadOriginalImage(group.image_id)
+      : api.downloadQuestionImage(group.questions[0].id, 'original');
+    return download.then(thumbnailPath => {
       const groups = this.data.groups.map((item, groupIndex) => groupIndex === index ? ({
         ...item,
         thumbnailPath,
@@ -67,12 +70,15 @@ Page({
   },
   previewOriginal() {
     const group = this.data.currentGroup;
-    if (!group || !group.questions.length) return Promise.resolve();
+    if (!group) return Promise.resolve();
     if (this.data.originalImagePath) {
       wx.previewImage({ current: this.data.originalImagePath, urls: [this.data.originalImagePath] });
       return Promise.resolve();
     }
-    return api.downloadQuestionImage(group.questions[0].id, 'original').then(path => {
+    const download = group.group_type === 'image_issue'
+      ? api.downloadOriginalImage(group.image_id)
+      : api.downloadQuestionImage(group.questions[0].id, 'original');
+    return download.then(path => {
       this.setData({ originalImagePath: path });
       wx.previewImage({ current: path, urls: [path] });
     }).catch(() => wx.showToast({ title: '原图加载失败', icon: 'none' }));
@@ -143,6 +149,50 @@ Page({
             .finally(() => this.setData({ saving: false }));
         },
       }),
+    });
+  },
+  reprocessImage(correction) {
+    const group = this.data.currentGroup;
+    if (!group || this.data.saving) return Promise.resolve();
+    this.setData({ saving: true });
+    return api.reprocessReviewImage(group.image_id, correction)
+      .then(() => {
+        wx.showToast({ title: '已重新提交识别', icon: 'none' });
+        return this.loadGroups();
+      })
+      .catch(() => wx.showToast({ title: '重新识别失败，请稍后重试', icon: 'none' }))
+      .finally(() => this.setData({ saving: false }));
+  },
+  onRetryMarks() {
+    return this.reprocessImage('missed_errors');
+  },
+  onForceUnmarked() {
+    return this.reprocessImage('force_unmarked');
+  },
+  onCancelImage() {
+    const group = this.data.currentGroup;
+    if (!group || this.data.saving) return Promise.resolve();
+    this.setData({ saving: true });
+    return api.cancelImages([group.image_id])
+      .then(() => this.loadGroups())
+      .catch(() => wx.showToast({ title: '操作失败，请稍后重试', icon: 'none' }))
+      .finally(() => this.setData({ saving: false }));
+  },
+  onRetake() {
+    const group = this.data.currentGroup;
+    if (!group || this.data.saving) return;
+    wx.showModal({
+      title: '重新拍摄',
+      content: '将不再处理当前图片，并返回拍照录入页。',
+      confirmText: '重新拍摄',
+      success: ({ confirm }) => {
+        if (!confirm) return;
+        this.setData({ saving: true });
+        api.cancelImages([group.image_id])
+          .then(() => wx.switchTab({ url: '/pages/capture/capture' }))
+          .catch(() => wx.showToast({ title: '操作失败，请稍后重试', icon: 'none' }))
+          .finally(() => this.setData({ saving: false }));
+      },
     });
   },
   submitGroup() {
