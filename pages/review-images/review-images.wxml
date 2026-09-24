@@ -1,18 +1,18 @@
 <view class="review-page">
   <view wx:if="{{loading}}" class="state">加载中...</view>
-  <view wx:elif="{{!currentGroup}}" class="state">暂时没有待确认题目</view>
+  <view wx:elif="{{!currentGroup}}" class="state">暂时没有待确认图片</view>
   <block wx:else>
     <scroll-view scroll-x class="group-scroll">
       <view class="group-tabs">
         <view wx:for="{{groups}}" wx:key="image_id" data-index="{{index}}" bindtap="onGroupTap" class="group-tab {{activeIndex === index ? 'active' : ''}}">
           <image wx:if="{{item.thumbnailPath}}" class="group-thumbnail" src="{{item.thumbnailPath}}" mode="aspectFill" />
-          <text>第{{index + 1}}张 · {{item.group_type === 'image_issue' ? '待处理' : item.question_count + '题'}}</text>
+          <text>第{{index + 1}}张 · {{item.group_type === 'image_issue' ? '待处理' : (item.group_type === 'completed_image' ? '可补充' : item.question_count + '题')}}</text>
         </view>
       </view>
     </scroll-view>
     <view class="source-card" bindtap="previewOriginal">
-      <text class="source-title">{{currentGroup.group_type === 'image_issue' ? '待恢复的原图' : '同一张原图中的待确认题目'}}</text>
-      <text wx:if="{{currentGroup.group_type !== 'image_issue'}}" class="source-summary">本图已自动收录{{currentGroup.auto_collected_count}}题，另有{{currentGroup.question_count}}题需要你确认</text>
+      <text class="source-title">{{currentGroup.group_type === 'image_issue' ? '待恢复的原图' : (currentGroup.question_count ? '同一张原图中的待确认题目' : (currentGroup.group_type === 'completed_image' ? '已处理图片，可继续补充错题' : '本图尚未发现错题'))}}</text>
+      <text wx:if="{{currentGroup.group_type !== 'image_issue' && currentGroup.question_count}}" class="source-summary">本图已收录{{currentGroup.auto_collected_count}}题，另有{{currentGroup.question_count}}题需要你确认</text>
       <image wx:if="{{originalImagePath}}" class="original" src="{{originalImagePath}}" mode="widthFix" />
       <text class="source-copy">点击查看整张原图，可放大对照全部题目</text>
     </view>
@@ -21,17 +21,20 @@
       <text class="issue-message">{{currentGroup.issue_message || '系统检测到批改痕迹，但没有找到可确认的错题区域。'}}</text>
       <button disabled="{{saving}}" bindtap="onRetryMarks">重新识别红标</button>
       <button disabled="{{saving}}" bindtap="onForceUnmarked">按无红标作业分析</button>
+      <button disabled="{{saving}}" bindtap="onAddMissedTap">在原图上手动补充错题</button>
       <view class="secondary-actions">
         <button disabled="{{saving}}" bindtap="onRetake">重新拍摄</button>
         <button disabled="{{saving}}" bindtap="onCancelImage">不处理此图</button>
       </view>
     </view>
     <block wx:else>
-      <view class="bulk-actions">
-        <button data-decision="collect" bindtap="decideAll">全部收录为错题</button>
+      <view class="bulk-actions" wx:if="{{currentGroup.questions.length}}">
         <button data-decision="ignore" bindtap="decideAll">全部不收录</button>
       </view>
-      <button class="reprocess" disabled="{{saving}}" bindtap="onReprocessTap">本图识别不准确</button>
+      <view wx:if="{{!currentGroup.questions.length}}" class="empty-review">
+        <text>{{currentGroup.group_type === 'completed_image' ? '这张图片已处理。如有漏掉的错题，可以继续从原图补充。' : '没有自动识别到候选。你可以在原图上框出错题，手动补充。'}}</text>
+      </view>
+      <button wx:if="{{currentGroup.group_type !== 'completed_image'}}" class="reprocess" disabled="{{saving}}" bindtap="onReprocessTap">本图识别不准确</button>
       <view class="question-card" wx:for="{{currentGroup.questions}}" wx:key="id">
       <image wx:if="{{item.cropImagePath}}" class="crop" src="{{item.cropImagePath}}" mode="widthFix" data-path="{{item.cropImagePath}}" bindtap="previewCrop" />
       <button wx:elif="{{!item.cropLoading}}" class="load-crop" data-id="{{item.id}}" bindtap="loadCrop">查看题目裁剪图</button>
@@ -46,8 +49,16 @@
         <button class="{{item.decision === 'collect' ? 'selected collect' : ''}}" data-id="{{item.id}}" data-decision="collect" bindtap="onDecisionTap">收录为错题</button>
         <button class="{{item.decision === 'ignore' ? 'selected ignore' : ''}}" data-id="{{item.id}}" data-decision="ignore" bindtap="onDecisionTap">不收录</button>
       </view>
+      <view wx:if="{{item.decision === 'collect'}}" class="confirm-fields">
+        <text class="field-hint">请核对题目内容和正确答案，确认后才会加入错题本。</text>
+        <input value="{{item.review_fields.instruction}}" placeholder="题目要求，如：看拼音写词语" data-id="{{item.id}}" data-field="instruction" bindinput="onReviewFieldInput" />
+        <input value="{{item.review_fields.prompt_text}}" placeholder="题目内容，如：bīng kuài" data-id="{{item.id}}" data-field="prompt_text" bindinput="onReviewFieldInput" />
+        <picker mode="selector" range="{{questionTypes}}" range-key="label" value="{{item.questionTypeIndex >= 0 ? item.questionTypeIndex : 0}}" data-id="{{item.id}}" bindchange="onReviewTypeChange"><view class="type-picker">题型：{{item.questionTypeIndex >= 0 ? questionTypes[item.questionTypeIndex].label : '请选择'}}　›</view></picker>
+        <input value="{{item.review_fields.correct_answer}}" placeholder="正确答案" data-id="{{item.id}}" data-field="correct_answer" bindinput="onReviewFieldInput" />
       </view>
-      <button class="submit" loading="{{saving}}" disabled="{{saving}}" bindtap="submitGroup">确认本页决定</button>
+      </view>
+      <button class="add-missed" disabled="{{saving}}" bindtap="onAddMissedTap">＋ 补充一题漏掉的错题</button>
+      <button wx:if="{{currentGroup.questions.length}}" class="submit" loading="{{saving}}" disabled="{{saving}}" bindtap="submitGroup">确认本页决定</button>
     </block>
   </block>
 </view>

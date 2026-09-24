@@ -5,8 +5,8 @@
   </view>
   <view class="review-entry" bindtap="goToReview">
     <view>
-      <text class="review-entry-title">待确认题目<text wx:if="{{reviewQuestionCount}}">（{{reviewQuestionCount}}）</text></text>
-      <text class="review-entry-copy">按原图分组审核，确认后才会进入错题库</text>
+      <text class="review-entry-title">核对与补充错题<text wx:if="{{reviewQuestionCount}}">（待确认{{reviewQuestionCount}}题）</text></text>
+      <text class="review-entry-copy">按原图核对识别结果，也可从已上传图片补充漏掉的错题</text>
     </view>
     <text class="review-entry-arrow">›</text>
   </view>

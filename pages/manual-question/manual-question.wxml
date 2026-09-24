@@ -1,0 +1,49 @@
+<view class="manual-page">
+  <view wx:if="{{step === 'select'}}" class="step-content">
+    <view class="instruction-card">
+      <text class="step-title">框出漏掉的错题</text>
+      <text class="step-copy">在原图上先点题目左上角，再点右下角。长图可上下滑动；框选后可重选角点或微调边缘。</text>
+    </view>
+    <view class="selection-tools">
+      <button data-point="first" bindtap="choosePoint">重选左上角</button>
+      <button data-point="second" bindtap="choosePoint">重选右下角</button>
+      <button data-zoom="1" bindtap="setZoom">适合屏幕</button>
+      <button data-zoom="2" bindtap="setZoom">放大 2×</button>
+    </view>
+    <scroll-view wx:if="{{imagePath}}" scroll-x scroll-y class="image-scroll">
+      <view class="image-stage" style="{{stageStyle}}" bindtap="onStageTap">
+        <image class="source-image" src="{{imagePath}}" mode="widthFix" bindload="onImageLoad" />
+        <view wx:if="{{firstPoint}}" class="corner-marker" style="left:{{firstPoint.x * 100}}%;top:{{firstPoint.y * 100}}%">1</view>
+        <view wx:if="{{bbox}}" class="selection-box" style="{{selectionStyle}}"><text>题目范围</text></view>
+      </view>
+    </scroll-view>
+    <view wx:if="{{bbox}}" class="adjust-card">
+      <text>框得太松或太紧？微调边缘，或点击上方按钮后重选角点。</text>
+      <view class="adjust-row">
+        <button data-edge="left" data-delta="-1" bindtap="nudge">左边 −</button><button data-edge="left" data-delta="1" bindtap="nudge">左边 ＋</button>
+        <button data-edge="right" data-delta="-1" bindtap="nudge">右边 −</button><button data-edge="right" data-delta="1" bindtap="nudge">右边 ＋</button>
+      </view>
+      <view class="adjust-row">
+        <button data-edge="top" data-delta="-1" bindtap="nudge">上边 −</button><button data-edge="top" data-delta="1" bindtap="nudge">上边 ＋</button>
+        <button data-edge="bottom" data-delta="-1" bindtap="nudge">下边 −</button><button data-edge="bottom" data-delta="1" bindtap="nudge">下边 ＋</button>
+      </view>
+      <text class="preview-label">框选内容预览</text>
+      <image wx:if="{{cropPreviewPath}}" class="crop-preview" src="{{cropPreviewPath}}" mode="aspectFit" />
+      <canvas canvas-id="crop-preview" class="preview-canvas" />
+    </view>
+    <button class="primary-button" disabled="{{!bbox}}" bindtap="onContinue">确认范围，填写题目</button>
+  </view>
+  <view wx:else class="step-content">
+    <view class="instruction-card">
+      <text class="step-title">核对题目后保存</text>
+      <text class="step-copy">先看裁剪预览，再填写题目要求、题目内容和正确答案。保存失败时，输入会保留。</text>
+    </view>
+    <image wx:if="{{cropPreviewPath}}" class="form-preview" src="{{cropPreviewPath}}" mode="widthFix" />
+    <input value="{{instruction}}" data-field="instruction" bindinput="onFieldInput" placeholder="题目要求，如：看拼音写词语" />
+    <input value="{{prompt_text}}" data-field="prompt_text" bindinput="onFieldInput" placeholder="题目内容，如：bīng kuài" />
+    <picker mode="selector" range="{{questionTypes}}" range-key="label" value="{{questionTypeIndex >= 0 ? questionTypeIndex : 0}}" bindchange="onQuestionTypeChange"><view class="type-picker">题型：{{question_type ? questionTypes[questionTypeIndex].label : '请选择'}}　›</view></picker>
+    <input value="{{correct_answer}}" data-field="correct_answer" bindinput="onFieldInput" placeholder="正确答案（必填）" />
+    <input value="{{student_answer}}" data-field="student_answer" bindinput="onFieldInput" placeholder="学生作答（选填）" />
+    <view class="form-actions"><button bindtap="backToSelection">返回调整范围</button><button class="primary-button" loading="{{saving}}" disabled="{{saving}}" bindtap="onSave">保存为错题</button></view>
+  </view>
+</view>

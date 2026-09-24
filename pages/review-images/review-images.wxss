@@ -22,6 +22,12 @@
 .selected.collect { background: #1aad19; color: #fff; }
 .selected.ignore { background: #777; color: #fff; }
 .submit { background: #1aad19; color: #fff; }
+.confirm-fields { margin-top: 12px; padding: 12px; border-radius: 8px; background: #f7f9f6; }
+.confirm-fields input { margin-top: 8px; padding: 9px 10px; border: 1rpx solid #e4e8e2; border-radius: 6px; background: #fff; font-size: 13px; }
+.field-hint { color: #66705f; font-size: 12px; line-height: 1.5; }
+.type-picker { margin-top: 8px; padding: 9px 10px; border: 1rpx solid #e4e8e2; border-radius: 6px; background: #fff; color: #66705f; font-size: 13px; }
+.empty-review { margin: 12px 0; padding: 14px; border-radius: 8px; background: #fff8e1; color: #765615; font-size: 13px; line-height: 1.6; }
+.add-missed { margin: 0 0 12px; color: #765615; background: #fff8e1; font-size: 14px; }
 .issue-card { margin-bottom: 12px; padding: 16px; border-radius: 10px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
 .issue-title, .issue-message { display: block; }
 .issue-title { margin-bottom: 6px; color: #765615; font-weight: 600; }

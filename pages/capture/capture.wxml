@@ -30,6 +30,7 @@
           <text wx:else class="status status-{{item.status}}">{{item.status === 'confirmed' && item.questionCount === 0 ? '处理完成（未发现错题）' : statusText[item.status]}}</text>
           <button wx:if="{{item.status === 'failed' && item.imageId}}" class="retry-btn" bindtap="onRetryTap" data-index="{{index}}">重试</button>
           <button wx:if="{{item.status === 'needs_review' && item.imageId}}" class="review-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">去确认</button>
+          <button wx:if="{{item.status === 'confirmed' && item.questionCount === 0 && item.imageId}}" class="review-btn" bindtap="onReviewTap" data-image-id="{{item.imageId}}">补充错题</button>
         </view>
       </view>
       <view class="upload-region upload-subject-region">

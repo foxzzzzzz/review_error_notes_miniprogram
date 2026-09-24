@@ -196,6 +196,36 @@ test('server URL resolver expands relative file paths', () => {
   assert.equal(api.resolveServerUrl(''), '');
 });
 
+test('manual review endpoint sends the supplied client idempotency key and normalized bbox', async () => {
+  let call;
+  const api = loadApi({
+    request(options) {
+      call = options;
+      options.success({ statusCode: 201, data: { added: 1 } });
+    },
+  });
+  const payload = { question_id: 'client-id', bbox: [0.1, 0.2, 0.4, 0.5], correct_answer: '冰块' };
+
+  await api.addManualReviewQuestions('image 1', payload);
+
+  assert.equal(call.url.endsWith('/api/questions/review/images/image%201/manual-questions'), true);
+  assert.equal(call.method, 'POST');
+  assert.deepEqual(call.data, payload);
+});
+
+test('normalized original image download requests the orientation-corrected source', async () => {
+  let call;
+  const api = loadApi({
+    downloadFile(options) {
+      call = options;
+      options.success({ statusCode: 200, tempFilePath: 'wxfile://normalized.jpg' });
+    },
+  });
+
+  assert.equal(await api.downloadNormalizedOriginalImage('image-1'), 'wxfile://normalized.jpg');
+  assert.equal(call.url.endsWith('/api/upload/images/image-1/original?normalized=1'), true);
+});
+
 
 test('question image download sends authentication and returns the temporary path', async () => {
   let call;

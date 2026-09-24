@@ -94,10 +94,10 @@ const downloadQuestionImage = (questionId, view = 'crop', retried = false) => (
   })
 );
 
-const downloadOriginalImage = (imageId, retried = false) => (
+const downloadOriginalImage = (imageId, retried = false, normalized = false) => (
   new Promise((resolve, reject) => {
     wx.downloadFile({
-      url: `${BASE_URL}/upload/images/${encodeURIComponent(imageId)}/original`,
+      url: `${BASE_URL}/upload/images/${encodeURIComponent(imageId)}/original${normalized ? '?normalized=1' : ''}`,
       header: { 'Authorization': `Bearer ${wx.getStorageSync('token') || ''}` },
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300 && res.tempFilePath) {
@@ -106,7 +106,7 @@ const downloadOriginalImage = (imageId, retried = false) => (
         }
         if (res.statusCode === 401 && !retried) {
           session.retryAfterUnauthorized(
-            () => downloadOriginalImage(imageId, true)
+            () => downloadOriginalImage(imageId, true, normalized)
           ).then(resolve, reject);
           return;
         }
@@ -282,6 +282,11 @@ module.exports = {
   },
   getQuestion: (id) => request(`/questions/${id}`),
   listReviewImages: () => request('/questions/review/images'),
+  addManualReviewQuestions: (imageId, question) => request(
+    `/questions/review/images/${encodeURIComponent(imageId)}/manual-questions`,
+    { method: 'POST', data: question }
+  ),
+  downloadNormalizedOriginalImage: imageId => downloadOriginalImage(imageId, false, true),
   decideImageReviews: (imageId, decisions) => request(
     `/questions/review/images/${encodeURIComponent(imageId)}/decisions`,
     { method: 'POST', data: { decisions } }

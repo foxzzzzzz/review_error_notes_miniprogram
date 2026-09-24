@@ -1,4 +1,5 @@
 const api = require('../../utils/api');
+const { hasCompleteReviewFields, buildDecisionPayload, QUESTION_TYPES, questionTypeIndex } = require('../../utils/review-correction');
 
 Page({
   data: {
@@ -8,10 +9,17 @@ Page({
     originalImagePath: '',
     loading: true,
     saving: false,
+    questionTypes: QUESTION_TYPES,
   },
   onLoad(options) {
     this.preferredImageId = options.imageId || '';
     return this.loadGroups();
+  },
+  onShow() {
+    if (this.data.refreshAfterManual) {
+      this.setData({ refreshAfterManual: false });
+      return this.loadGroups();
+    }
   },
   loadGroups() {
     this.setData({ loading: true });
@@ -22,6 +30,13 @@ Page({
         questions: (group.questions || []).map(question => ({
           ...question,
           decision: '',
+          review_fields: {
+            instruction: (question.review_fields || {}).instruction || '',
+            prompt_text: (question.review_fields || {}).prompt_text || '',
+            question_type: (question.review_fields || {}).question_type || '',
+            correct_answer: question.ocr_answer || '',
+          },
+          questionTypeIndex: questionTypeIndex((question.review_fields || {}).question_type),
           cropImagePath: '',
           cropLoading: false,
         })),
@@ -50,8 +65,8 @@ Page({
     const group = this.data.groups[index];
     if (!group) return Promise.resolve('');
     if (group.thumbnailPath) return Promise.resolve(group.thumbnailPath);
-    const download = group.group_type === 'image_issue'
-      ? api.downloadOriginalImage(group.image_id)
+    const download = group.group_type === 'image_issue' || !group.questions.length
+      ? api.downloadNormalizedOriginalImage(group.image_id)
       : api.downloadQuestionImage(group.questions[0].id, 'original');
     return download.then(thumbnailPath => {
       const groups = this.data.groups.map((item, groupIndex) => groupIndex === index ? ({
@@ -75,8 +90,8 @@ Page({
       wx.previewImage({ current: this.data.originalImagePath, urls: [this.data.originalImagePath] });
       return Promise.resolve();
     }
-    const download = group.group_type === 'image_issue'
-      ? api.downloadOriginalImage(group.image_id)
+    const download = group.group_type === 'image_issue' || !group.questions.length
+      ? api.downloadNormalizedOriginalImage(group.image_id)
       : api.downloadQuestionImage(group.questions[0].id, 'original');
     return download.then(path => {
       this.setData({ originalImagePath: path });
@@ -116,6 +131,32 @@ Page({
   },
   onDecisionTap(e) {
     this.setDecision(e.currentTarget.dataset.id, e.currentTarget.dataset.decision);
+  },
+  onReviewFieldInput(e) {
+    const { id, field } = e.currentTarget.dataset;
+    const question = this.data.currentGroup.questions.find(item => item.id === id);
+    if (!question || !['instruction', 'prompt_text', 'question_type', 'correct_answer'].includes(field)) return;
+    this.updateQuestion(id, {
+      review_fields: { ...question.review_fields, [field]: e.detail.value },
+    });
+  },
+  onReviewTypeChange(e) {
+    const id = e.currentTarget.dataset.id;
+    const selected = this.data.questionTypes[Number(e.detail.value)];
+    const question = this.data.currentGroup.questions.find(item => item.id === id);
+    if (!selected || !question) return;
+    this.updateQuestion(id, {
+      questionTypeIndex: Number(e.detail.value),
+      review_fields: { ...question.review_fields, question_type: selected.value },
+    });
+  },
+  onAddMissedTap() {
+    const group = this.data.currentGroup;
+    if (!group || this.data.saving) return;
+    this.preferredImageId = group.image_id;
+    wx.navigateTo({
+      url: `/pages/manual-question/manual-question?imageId=${encodeURIComponent(group.image_id)}`,
+    });
   },
   decideAll(e) {
     const group = this.data.currentGroup;
@@ -202,11 +243,14 @@ Page({
       wx.showToast({ title: '请先判断本页每一道题', icon: 'none' });
       return Promise.resolve();
     }
+    const invalid = group.questions.find(question => question.decision === 'collect'
+      && !hasCompleteReviewFields(question));
+    if (invalid) {
+      wx.showToast({ title: '请补全题目要求、内容、题型和正确答案', icon: 'none' });
+      return Promise.resolve();
+    }
     this.setData({ saving: true });
-    return api.decideImageReviews(group.image_id, group.questions.map(question => ({
-      question_id: question.id,
-      decision: question.decision,
-    }))).then(result => {
+    return api.decideImageReviews(group.image_id, buildDecisionPayload(group.questions)).then(result => {
       wx.showToast({ title: `已收录${result.collected}道，未收录${result.ignored}道`, icon: 'none' });
       return this.loadGroups();
     }).catch(() => wx.showToast({ title: '提交失败，请重试', icon: 'none' }))

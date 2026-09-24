@@ -50,7 +50,7 @@ test('review page exposes per-image thumbnails and a correction reprocessing act
 test('review page explains the collected and pending counts for the same image', () => {
   const template = read('pages/review-images/review-images.wxml');
 
-  assert.match(template, /本图已自动收录\{\{currentGroup\.auto_collected_count\}\}题/);
+  assert.match(template, /本图已收录\{\{currentGroup\.auto_collected_count\}\}题/);
   assert.match(template, /另有\{\{currentGroup\.question_count\}\}题需要你确认/);
 });
 
@@ -71,6 +71,6 @@ test('image issue group renders recovery actions without empty bulk decisions', 
   assert.match(template, /按无红标作业分析/);
   assert.match(script, /force_unmarked/);
   assert.match(script, /missed_errors/);
-  assert.match(script, /downloadOriginalImage/);
+  assert.match(script, /downloadNormalizedOriginalImage/);
   assert.match(script, /cancelImages/);
 });

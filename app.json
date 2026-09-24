@@ -3,6 +3,7 @@
     "pages/capture/capture",
     "pages/questions/questions",
     "pages/review-images/review-images",
+    "pages/manual-question/manual-question",
     "pages/question-detail/detail",
     "pages/sheet/sheet",
     "pages/sheet-result/result",
