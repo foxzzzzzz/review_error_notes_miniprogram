@@ -213,6 +213,23 @@ test('manual review endpoint sends the supplied client idempotency key and norma
   assert.deepEqual(call.data, payload);
 });
 
+test('manual suggestion requests one mode for the selected image region', async () => {
+  let call;
+  const api = loadApi({
+    request(options) {
+      call = options;
+      options.success({ statusCode: 200, data: { mode: 'ocr', fields: {} } });
+    },
+  });
+  const bbox = [0.1, 0.2, 0.4, 0.5];
+
+  await api.getManualQuestionSuggestion('image 1', bbox, 'ocr');
+
+  assert.equal(call.url.endsWith('/api/questions/review/images/image%201/manual-suggestion'), true);
+  assert.equal(call.method, 'POST');
+  assert.deepEqual(call.data, { bbox, mode: 'ocr' });
+});
+
 test('normalized original image download requests the orientation-corrected source', async () => {
   let call;
   const api = loadApi({

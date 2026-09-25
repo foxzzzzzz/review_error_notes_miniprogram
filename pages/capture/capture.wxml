@@ -8,9 +8,9 @@
     <view wx:else class="placeholder">点击拍照或选择图片</view>
   </view>
 
-  <scroll-view wx:if="{{uploads.length > 1}}" scroll-x class="preview-strip">
+  <scroll-view wx:if="{{previewUploads.length > 1}}" scroll-x class="preview-strip">
     <view class="preview-thumbnails">
-      <image wx:for="{{uploads}}" wx:key="id" class="preview-thumbnail {{previewUploadId === item.id ? 'selected' : ''}}" src="{{item.path}}" mode="aspectFill" data-id="{{item.id}}" bindtap="selectPreview" />
+      <image wx:for="{{previewUploads}}" wx:key="id" class="preview-thumbnail {{previewUploadId === item.id ? 'selected' : ''}}" src="{{item.path}}" mode="aspectFill" data-id="{{item.id}}" bindtap="selectPreview" />
     </view>
   </scroll-view>
 

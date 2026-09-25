@@ -13,6 +13,7 @@ Page({
     firstPoint: null, secondPoint: null, bbox: null, selectionStyle: '',
     pointMode: 'first', step: 'select', cropPreviewPath: '',
     instruction: '', prompt_text: '', question_type: '', correct_answer: '', student_answer: '',
+    ocrDraftText: '', ocrSuggestionStatus: '', llmSuggestionStatus: '',
     questionTypes: QUESTION_TYPES, questionTypeIndex: questionTypeIndex('other'),
     saving: false,
     manualQuestionId: '',
@@ -120,19 +121,90 @@ Page({
       return;
     }
     this.setData({ selectionStyle: this.styleForBbox(this.data.bbox), step: 'fields' });
+    wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+    return this.loadSuggestions();
+  },
+  applySuggestedFields(fields) {
+    const allowed = ['instruction', 'prompt_text', 'question_type', 'correct_answer', 'student_answer'];
+    const updates = {};
+    for (const field of allowed) {
+      const value = fields && fields[field];
+      if (typeof value !== 'string' || !value.trim() || (this.editedFields || new Set()).has(field)) continue;
+      if (field === 'question_type') {
+        const index = questionTypeIndex(value);
+        if (index < 0) continue;
+        updates.questionTypeIndex = index;
+      }
+      updates[field] = value.trim();
+    }
+    if (Object.keys(updates).length) this.setData(updates);
+    return updates;
+  },
+  loadSuggestions() {
+    const requestId = (this.suggestionRequestId || 0) + 1;
+    this.suggestionRequestId = requestId;
+    const bbox = this.data.bbox.slice();
+    const isCurrent = () => this.suggestionRequestId === requestId
+      && this.data.step === 'fields'
+      && JSON.stringify(this.data.bbox) === JSON.stringify(bbox);
+    let llmPromptApplied = false;
+    this.setData({
+      ocrDraftText: '',
+      ocrSuggestionStatus: '正在读取选区文字…',
+      llmSuggestionStatus: '正在生成题目和答案建议…',
+    });
+    const ocr = api.getManualQuestionSuggestion(this.data.imageId, bbox, 'ocr')
+      .then(result => {
+        if (!isCurrent()) return;
+        const fields = llmPromptApplied ? { ...(result.fields || {}), prompt_text: '' } : result.fields;
+        this.applySuggestedFields(fields);
+        this.setData({
+          ocrDraftText: result.ocr_text || '',
+          ocrSuggestionStatus: result.ocr_text ? '已读取选区文字，请核对' : 'OCR 未读出文字，可手动填写',
+        });
+      })
+      .catch(() => {
+        if (isCurrent()) this.setData({ ocrSuggestionStatus: 'OCR 暂不可用，可手动填写' });
+      });
+    const llm = api.getManualQuestionSuggestion(this.data.imageId, bbox, 'llm')
+      .then(result => {
+        if (!isCurrent()) return;
+        const applied = this.applySuggestedFields(result.fields);
+        llmPromptApplied = Boolean(applied.prompt_text);
+        this.setData({ llmSuggestionStatus: Object.keys(applied).length
+          ? '已填入智能建议，请逐项核对'
+          : '没有可靠的智能建议，请手动补充' });
+      })
+      .catch(() => {
+        if (isCurrent()) this.setData({ llmSuggestionStatus: '智能建议暂不可用，可继续手动填写' });
+      });
+    return Promise.all([ocr, llm]);
   },
   onFieldInput(e) {
     const field = e.currentTarget.dataset.field;
     if (['instruction', 'prompt_text', 'question_type', 'correct_answer', 'student_answer'].includes(field)) {
+      if (!this.editedFields) this.editedFields = new Set();
+      this.editedFields.add(field);
       this.setData({ [field]: e.detail.value });
     }
   },
   onQuestionTypeChange(e) {
     const index = Number(e.detail.value);
     const selected = this.data.questionTypes[index];
-    if (selected) this.setData({ question_type: selected.value, questionTypeIndex: index });
+    if (selected) {
+      if (!this.editedFields) this.editedFields = new Set();
+      this.editedFields.add('question_type');
+      this.setData({ question_type: selected.value, questionTypeIndex: index });
+    }
   },
-  backToSelection() { this.setData({ step: 'select' }); },
+  backToSelection() {
+    this.suggestionRequestId = (this.suggestionRequestId || 0) + 1;
+    this.setData({ step: 'select' });
+    wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+  },
+  onUnload() {
+    this.suggestionRequestId = (this.suggestionRequestId || 0) + 1;
+  },
   onSave() {
     const required = ['instruction', 'prompt_text', 'question_type', 'correct_answer'];
     if (required.some(field => !String(this.data[field] || '').trim())) {
@@ -140,6 +212,7 @@ Page({
       return;
     }
     if (this.data.saving) return;
+    this.suggestionRequestId = (this.suggestionRequestId || 0) + 1;
     this.setData({ saving: true });
     const fields = {
       instruction: this.data.instruction,

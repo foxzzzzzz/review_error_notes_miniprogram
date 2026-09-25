@@ -31,14 +31,19 @@
       <image wx:if="{{cropPreviewPath}}" class="crop-preview" src="{{cropPreviewPath}}" mode="aspectFit" />
       <canvas canvas-id="crop-preview" class="preview-canvas" />
     </view>
-    <button class="primary-button" disabled="{{!bbox}}" bindtap="onContinue">确认范围，填写题目</button>
+    <view class="continue-bar"><button class="primary-button" disabled="{{!bbox}}" bindtap="onContinue">确认范围，填写题目</button></view>
   </view>
   <view wx:else class="step-content">
     <view class="instruction-card">
       <text class="step-title">核对题目后保存</text>
-      <text class="step-copy">先看裁剪预览，再填写题目要求、题目内容和正确答案。保存失败时，输入会保留。</text>
+      <text class="step-copy">识别结果会填入下方，也可以马上手动编辑；正确答案请亲自核对后保存。</text>
     </view>
     <image wx:if="{{cropPreviewPath}}" class="form-preview" src="{{cropPreviewPath}}" mode="widthFix" />
+    <view class="suggestion-card">
+      <text>{{ocrSuggestionStatus}}</text>
+      <text wx:if="{{ocrDraftText}}" class="ocr-draft">OCR 文字草稿：{{ocrDraftText}}</text>
+      <text>{{llmSuggestionStatus}}</text>
+    </view>
     <input value="{{instruction}}" data-field="instruction" bindinput="onFieldInput" placeholder="题目要求，如：看拼音写词语" />
     <input value="{{prompt_text}}" data-field="prompt_text" bindinput="onFieldInput" placeholder="题目内容，如：bīng kuài" />
     <picker mode="selector" range="{{questionTypes}}" range-key="label" value="{{questionTypeIndex >= 0 ? questionTypeIndex : 0}}" bindchange="onQuestionTypeChange"><view class="type-picker">题型：{{question_type ? questionTypes[questionTypeIndex].label : '请选择'}}　›</view></picker>

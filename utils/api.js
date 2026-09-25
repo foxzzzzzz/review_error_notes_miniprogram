@@ -286,6 +286,10 @@ module.exports = {
     `/questions/review/images/${encodeURIComponent(imageId)}/manual-questions`,
     { method: 'POST', data: question }
   ),
+  getManualQuestionSuggestion: (imageId, bbox, mode) => request(
+    `/questions/review/images/${encodeURIComponent(imageId)}/manual-suggestion`,
+    { method: 'POST', data: { bbox, mode } }
+  ),
   downloadNormalizedOriginalImage: imageId => downloadOriginalImage(imageId, false, true),
   decideImageReviews: (imageId, decisions) => request(
     `/questions/review/images/${encodeURIComponent(imageId)}/decisions`,

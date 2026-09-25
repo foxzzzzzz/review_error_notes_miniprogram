@@ -300,6 +300,7 @@ test('capture changes the main preview when a thumbnail is selected', () => {
     { id: 'one', path: '/tmp/one.jpg', status: 'pending' },
     { id: 'two', path: '/tmp/two.jpg', status: 'pending' },
   ]);
+  page.data.previewUploads = page.data.uploads;
 
   try {
     page.selectPreview({ currentTarget: { dataset: { id: 'two' } } });
@@ -636,6 +637,45 @@ test('capture moves a submitted image from the current batch to background tasks
     assert.deepEqual(stored['captureBackgroundUploads:student-1'].map(item => item.imageId), ['image-1']);
     assert.deepEqual(page.data.uploads, []);
     assert.deepEqual(page.data.backgroundUploads.map(item => item.imageId), ['image-1']);
+  } finally {
+    delete global.wx;
+    delete global.Page;
+    delete require.cache[capturePath];
+    delete require.cache[apiPath];
+  }
+});
+
+
+test('capture keeps all four submitted images switchable in the main preview', async () => {
+  global.wx = {
+    chooseMedia(options) {
+      options.success({
+        tempFiles: Array.from({ length: 4 }, (_, index) => ({
+          tempFilePath: `/tmp/question-${index + 1}.jpg`,
+        })),
+      });
+    },
+    getStorageSync: key => key === 'studentId' ? 'student-1' : '',
+    setStorageSync() {},
+    showToast() {},
+  };
+  const definition = loadCapturePage({
+    uploadImage: filePath => Promise.resolve({
+      image_id: filePath,
+      status: 'pending',
+    }),
+  });
+  const page = createCapturePage(definition);
+  page.startStatusPolling = () => Promise.resolve();
+
+  try {
+    page.takePhoto();
+    await page.uploadPending();
+    const fourthImageId = page.data.previewUploads[3].id;
+    page.selectPreview({ currentTarget: { dataset: { id: fourthImageId } } });
+
+    assert.equal(page.data.previewUrl, '/tmp/question-4.jpg');
+    assert.equal(page.data.previewUploadId, fourthImageId);
   } finally {
     delete global.wx;
     delete global.Page;

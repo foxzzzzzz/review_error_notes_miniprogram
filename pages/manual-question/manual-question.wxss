@@ -1,4 +1,4 @@
-.manual-page { min-height: 100vh; padding-bottom: 32rpx; background: #f5f6f4; }
+.manual-page { min-height: 100vh; padding-bottom: calc(160rpx + env(safe-area-inset-bottom)); background: #f5f6f4; }
 .step-content { padding: 24rpx; }
 .instruction-card, .adjust-card { margin-bottom: 20rpx; padding: 24rpx; border-radius: 18rpx; background: #fff; }
 .step-title, .step-copy { display: block; }
@@ -18,7 +18,12 @@
 .crop-preview, .form-preview { display: block; width: 100%; max-height: 340rpx; margin: 12rpx auto; border-radius: 10rpx; background: #f0f1ee; }
 .preview-canvas { position: fixed; left: -1000px; top: -1000px; width: 600px; height: 360px; }
 .primary-button { margin: 14rpx 0 0; color: #fff; background: #35834a; }
+.continue-bar { position: fixed; right: 0; bottom: 0; left: 0; z-index: 5; padding: 12rpx 24rpx calc(12rpx + env(safe-area-inset-bottom)); background: #fff; box-shadow: 0 -4rpx 16rpx rgba(0,0,0,.08); }
+.continue-bar .primary-button { margin: 0; }
 .step-content input { margin: 16rpx 0; padding: 22rpx; border: 1rpx solid #dce3dc; border-radius: 12rpx; background: #fff; font-size: 27rpx; }
 .type-picker { margin: 16rpx 0; padding: 22rpx; border: 1rpx solid #dce3dc; border-radius: 12rpx; background: #fff; color: #66716a; font-size: 27rpx; }
 .form-actions { margin-top: 24rpx; }
 .form-actions .primary-button { margin: 0; }
+.suggestion-card { margin: 16rpx 0; padding: 18rpx 22rpx; border-radius: 12rpx; background: #eef5ef; color: #45624c; font-size: 24rpx; line-height: 1.6; }
+.suggestion-card text { display: block; }
+.suggestion-card .ocr-draft { margin: 8rpx 0; color: #657269; }

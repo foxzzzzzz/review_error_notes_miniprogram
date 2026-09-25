@@ -36,6 +36,7 @@ Page({
     semesters: ['上册','下册'],
     previewUrl: '',
     previewUploadId: '',
+    previewUploads: [],
     uploads: [],
     backgroundUploads: [],
     showBackgroundUploads: false,
@@ -152,6 +153,7 @@ Page({
         }));
         this.setData({
           uploads: newUploads,
+          previewUploads: newUploads,
           previewUrl: newUploads[0].path,
           previewUploadId: newUploads[0].id,
         });
@@ -160,9 +162,9 @@ Page({
   },
   selectPreview(e) {
     const id = e.currentTarget.dataset.id;
-    const upload = this.data.uploads.find(item => item.id === id);
-    if (!upload) return;
-    this.setData({ previewUrl: upload.path, previewUploadId: upload.id });
+    const previewUpload = this.data.previewUploads.find(item => item.id === id);
+    if (!previewUpload) return;
+    this.setData({ previewUrl: previewUpload.path, previewUploadId: previewUpload.id });
   },
   toggleBackgroundUploads() {
     this.setData({ showBackgroundUploads: !this.data.showBackgroundUploads });
