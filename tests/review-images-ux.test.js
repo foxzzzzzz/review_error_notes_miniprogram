@@ -74,3 +74,34 @@ test('image issue group renders recovery actions without empty bulk decisions', 
   assert.match(script, /downloadNormalizedOriginalImage/);
   assert.match(script, /cancelImages/);
 });
+
+test('collecting a candidate starts with the model answer suggestion and permits correction', async () => {
+  const pagePath = path.join(root, 'pages/review-images/review-images.js');
+  const apiPath = path.join(root, 'utils/api.js');
+  let definition;
+  delete require.cache[pagePath];
+  require.cache[apiPath] = { id: apiPath, filename: apiPath, loaded: true, exports: {
+    listReviewImages: () => Promise.resolve([{
+      image_id: 'image-1', group_type: 'questions', question_count: 1,
+      questions: [{ id: 'question-1', ocr_answer: '冰块', answer_status: 'suggested',
+        review_fields: { instruction: '看拼音写词语', prompt_text: 'bīng kuài', question_type: 'write_word' } }],
+    }]),
+    downloadQuestionImage: () => Promise.resolve('original.jpg'),
+  } };
+  global.Page = value => { definition = value; };
+  global.wx = { showToast() {} };
+  require(pagePath);
+  const page = { ...definition, data: { ...definition.data }, setData(values) { Object.assign(this.data, values); } };
+  try {
+    await page.loadGroups();
+    page.onDecisionTap({ currentTarget: { dataset: { id: 'question-1', decision: 'collect' } } });
+    assert.equal(page.data.currentGroup.questions[0].review_fields.correct_answer, '冰块');
+    page.onReviewFieldInput({ currentTarget: { dataset: { id: 'question-1', field: 'correct_answer' } }, detail: { value: '冰砖' } });
+    assert.equal(page.data.currentGroup.questions[0].review_fields.correct_answer, '冰砖');
+  } finally {
+    delete global.Page;
+    delete global.wx;
+    delete require.cache[pagePath];
+    delete require.cache[apiPath];
+  }
+});

@@ -43,7 +43,7 @@
       <text class="label">学生作答</text>
       <text wx:if="{{item.ocr_text}}">{{item.ocr_text}}</text>
       <text wx:else class="empty-answer">【空白】</text>
-      <text class="label">参考答案</text><text>{{item.ocr_answer || '暂无可靠答案'}}</text>
+      <text class="label">{{item.answer_status === 'suggested' ? '正确答案建议（请核对）' : '参考答案'}}</text><text>{{item.ocr_answer || '暂无可靠答案'}}</text>
       <text wx:if="{{item.ocr_raw_json.collection_reason}}" class="review-reason">待确认原因：{{item.ocr_raw_json.collection_reason}}</text>
       <view class="decision-row">
         <button class="{{item.decision === 'collect' ? 'selected collect' : ''}}" data-id="{{item.id}}" data-decision="collect" bindtap="onDecisionTap">收录为错题</button>
@@ -54,7 +54,7 @@
         <input value="{{item.review_fields.instruction}}" placeholder="题目要求，如：看拼音写词语" data-id="{{item.id}}" data-field="instruction" bindinput="onReviewFieldInput" />
         <input value="{{item.review_fields.prompt_text}}" placeholder="题目内容，如：bīng kuài" data-id="{{item.id}}" data-field="prompt_text" bindinput="onReviewFieldInput" />
         <picker mode="selector" range="{{questionTypes}}" range-key="label" value="{{item.questionTypeIndex >= 0 ? item.questionTypeIndex : 0}}" data-id="{{item.id}}" bindchange="onReviewTypeChange"><view class="type-picker">题型：{{item.questionTypeIndex >= 0 ? questionTypes[item.questionTypeIndex].label : '请选择'}}　›</view></picker>
-        <input value="{{item.review_fields.correct_answer}}" placeholder="正确答案" data-id="{{item.id}}" data-field="correct_answer" bindinput="onReviewFieldInput" />
+        <input value="{{item.review_fields.correct_answer}}" placeholder="正确答案（请核对或填写）" data-id="{{item.id}}" data-field="correct_answer" bindinput="onReviewFieldInput" />
       </view>
       </view>
       <button class="add-missed" disabled="{{saving}}" bindtap="onAddMissedTap">＋ 补充一题漏掉的错题</button>
