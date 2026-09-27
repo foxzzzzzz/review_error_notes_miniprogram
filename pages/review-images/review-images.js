@@ -1,10 +1,14 @@
 const api = require('../../utils/api');
+const config = require('../../utils/config');
 const { hasCompleteReviewFields, buildDecisionPayload, QUESTION_TYPES, questionTypeIndex } = require('../../utils/review-correction');
 
 Page({
   data: {
-    groups: [],
+    pendingGroups: [],
+    historyGroups: [],
+    historyExpanded: false,
     currentGroup: null,
+    currentGroupIsHistory: false,
     activeIndex: 0,
     originalImagePath: '',
     loading: true,
@@ -22,6 +26,8 @@ Page({
     }
   },
   loadGroups() {
+    this.groupsGeneration = (this.groupsGeneration || 0) + 1;
+    this.cropGeneration = (this.cropGeneration || 0) + 1;
     this.setData({ loading: true });
     return api.listReviewImages().then(groups => {
       const prepared = groups.map(group => ({
@@ -41,8 +47,14 @@ Page({
           cropLoading: false,
         })),
       }));
-      const preferredIndex = prepared.findIndex(group => group.image_id === this.preferredImageId);
-      this.setData({ groups: prepared, loading: false });
+      const pendingGroups = prepared.filter(group => group.group_type !== 'completed_image');
+      const historyGroups = prepared.filter(group => group.group_type === 'completed_image');
+      const preferredIndex = pendingGroups.findIndex(group => group.image_id === this.preferredImageId);
+      this.setData({ pendingGroups, historyGroups, loading: false, historyExpanded: false });
+      if (!pendingGroups.length) {
+        this.setData({ currentGroup: null, currentGroupIsHistory: false, originalImagePath: '' });
+        return Promise.resolve();
+      }
       return this.selectGroup(preferredIndex >= 0 ? preferredIndex : 0);
     }).catch(() => {
       this.setData({ loading: false });
@@ -50,38 +62,75 @@ Page({
     });
   },
   selectGroup(index) {
-    const group = this.data.groups[index];
+    const generation = this.cropGeneration = (this.cropGeneration || 0) + 1;
+    const group = this.data.pendingGroups[index];
     if (!group) {
-      this.setData({ currentGroup: null, originalImagePath: '' });
+      this.setData({ currentGroup: null, currentGroupIsHistory: false, originalImagePath: '' });
       return Promise.resolve();
     }
-    this.setData({ activeIndex: index, currentGroup: group, originalImagePath: group.thumbnailPath });
-    if (group.thumbnailPath) return Promise.resolve();
-    return this.loadGroupOriginal(index)
-      .then(originalImagePath => this.setData({ originalImagePath }))
-      .catch(() => this.setData({ originalImagePath: '' }));
+    this.setData({ activeIndex: index, currentGroup: group, currentGroupIsHistory: false, originalImagePath: group.thumbnailPath });
+    const original = group.thumbnailPath ? Promise.resolve(group.thumbnailPath) : this.loadGroupOriginal(index);
+    this.loadActiveGroupCrops(index, generation);
+    return original.catch(() => '')
+      .then(originalImagePath => {
+        if (generation === this.cropGeneration) this.setData({ originalImagePath });
+      });
   },
   loadGroupOriginal(index) {
-    const group = this.data.groups[index];
+    const group = this.data.pendingGroups[index];
     if (!group) return Promise.resolve('');
     if (group.thumbnailPath) return Promise.resolve(group.thumbnailPath);
+    const groupsGeneration = this.groupsGeneration;
     const download = group.group_type === 'image_issue' || !group.questions.length
       ? api.downloadNormalizedOriginalImage(group.image_id)
       : api.downloadQuestionImage(group.questions[0].id, 'original');
     return download.then(thumbnailPath => {
-      const groups = this.data.groups.map((item, groupIndex) => groupIndex === index ? ({
+      const activeAtIndex = this.data.pendingGroups[index];
+      if (groupsGeneration !== this.groupsGeneration || !activeAtIndex || activeAtIndex.image_id !== group.image_id) {
+        return thumbnailPath;
+      }
+      const pendingGroups = this.data.pendingGroups.map((item, groupIndex) => groupIndex === index ? ({
         ...item,
         thumbnailPath,
       }) : item);
-      this.setData({
-        groups,
-        currentGroup: groups[this.data.activeIndex],
-      });
+      const activeGroup = pendingGroups[this.data.activeIndex];
+      this.setData({ pendingGroups, ...(!this.data.currentGroupIsHistory && activeGroup
+        && activeGroup.image_id === group.image_id
+        ? { currentGroup: pendingGroups[this.data.activeIndex] } : {}) });
       return thumbnailPath;
     });
   },
   onGroupTap(e) {
     return this.selectGroup(Number(e.currentTarget.dataset.index));
+  },
+  toggleHistory() {
+    this.setData({ historyExpanded: !this.data.historyExpanded });
+  },
+  selectHistoryGroup(index) {
+    const generation = this.cropGeneration = (this.cropGeneration || 0) + 1;
+    const group = this.data.historyGroups[index];
+    if (!group) return Promise.resolve();
+    this.setData({ currentGroup: group, currentGroupIsHistory: true, originalImagePath: group.thumbnailPath || '' });
+    if (group.thumbnailPath) return Promise.resolve();
+    return this.loadHistoricalOriginal(index).then(originalImagePath => {
+      if (generation === this.cropGeneration) this.setData({ originalImagePath });
+    }).catch(() => {
+      if (generation === this.cropGeneration) this.setData({ originalImagePath: '' });
+    });
+  },
+  onHistoryGroupTap(e) {
+    return this.selectHistoryGroup(Number(e.currentTarget.dataset.index));
+  },
+  loadHistoricalOriginal(index) {
+    const group = this.data.historyGroups[index];
+    if (!group) return Promise.resolve('');
+    if (group.thumbnailPath) return Promise.resolve(group.thumbnailPath);
+    return api.downloadNormalizedOriginalImage(group.image_id).then(thumbnailPath => {
+      const historyGroups = this.data.historyGroups.map((item, groupIndex) => groupIndex === index
+        ? { ...item, thumbnailPath } : item);
+      this.setData({ historyGroups });
+      return thumbnailPath;
+    });
   },
   previewOriginal() {
     const group = this.data.currentGroup;
@@ -94,21 +143,105 @@ Page({
       ? api.downloadNormalizedOriginalImage(group.image_id)
       : api.downloadQuestionImage(group.questions[0].id, 'original');
     return download.then(path => {
-      this.setData({ originalImagePath: path });
-      wx.previewImage({ current: path, urls: [path] });
+      if (this.data.currentGroup && this.data.currentGroup.image_id === group.image_id) {
+        this.setData({ originalImagePath: path });
+        wx.previewImage({ current: path, urls: [path] });
+      }
     }).catch(() => wx.showToast({ title: '原图加载失败', icon: 'none' }));
   },
   loadCrop(e) {
     const questionId = e.currentTarget.dataset.id;
-    const question = this.data.currentGroup.questions.find(item => item.id === questionId);
+    const groupIndex = this.data.activeIndex;
+    const group = this.data.pendingGroups[groupIndex];
+    const question = group && group.questions.find(item => item.id === questionId);
     if (!question || question.cropImagePath || question.cropLoading) return Promise.resolve();
-
+    const generation = this.cropGeneration;
+    const groupsGeneration = this.groupsGeneration;
     this.updateQuestion(questionId, { cropLoading: true });
-    return api.downloadQuestionImage(questionId, 'crop').then(cropImagePath => {
-      this.updateQuestion(questionId, { cropImagePath });
-    }).catch(() => {
-      wx.showToast({ title: '题目图片加载失败', icon: 'none' });
-    }).finally(() => this.updateQuestion(questionId, { cropLoading: false }));
+    return this.downloadCrop(questionId, generation, groupsGeneration).catch(() => {
+      if (groupsGeneration === this.groupsGeneration) {
+        this.updateQuestionInGroup(groupIndex, questionId, { cropLoading: false });
+      }
+      if (generation === this.cropGeneration) wx.showToast({ title: '题目图片加载失败，请点按重试', icon: 'none' });
+    });
+  },
+  loadActiveGroupCrops(index, generation) {
+    const group = this.data.pendingGroups[index];
+    if (!group) return Promise.resolve();
+    const groupsGeneration = this.groupsGeneration;
+    return Promise.all(group.questions.map(question => this.downloadCrop(question.id, generation, groupsGeneration)
+      .catch(() => {
+        if (groupsGeneration === this.groupsGeneration) {
+          this.updateQuestionInGroup(index, question.id, { cropLoading: false });
+        }
+      })));
+  },
+  downloadCrop(questionId, generation, groupsGeneration) {
+    const requestGeneration = groupsGeneration === undefined ? this.groupsGeneration : groupsGeneration;
+    const groupIndex = this.data.pendingGroups.findIndex(group => group.questions.some(question => question.id === questionId));
+    const group = this.data.pendingGroups[groupIndex];
+    const question = group && group.questions.find(item => item.id === questionId);
+    if (!question || question.cropImagePath) return Promise.resolve();
+    if (!this.cropQueue) this.cropQueue = [];
+    if (!this.cropDownloadsInFlight) this.cropDownloadsInFlight = 0;
+    if (!this.cropPromises) this.cropPromises = {};
+    if (!this.cropInFlight) this.cropInFlight = {};
+    const inFlightKey = `${requestGeneration}:${questionId}`;
+    if (this.cropInFlight[inFlightKey]) return this.cropInFlight[inFlightKey];
+    const promiseKey = `${requestGeneration}:${generation}:${questionId}`;
+    if (this.cropPromises[promiseKey]) return this.cropPromises[promiseKey];
+    this.updateQuestionInGroup(groupIndex, questionId, { cropLoading: true });
+    const request = { questionId, groupIndex, imageId: group.image_id, generation,
+      groupsGeneration: requestGeneration };
+    const promise = new Promise((resolve, reject) => {
+      request.resolve = resolve;
+      request.reject = reject;
+    });
+    const trackedPromise = promise.finally(() => {
+      if (this.cropPromises[promiseKey] === trackedPromise) delete this.cropPromises[promiseKey];
+    });
+    request.promise = trackedPromise;
+    this.cropPromises[promiseKey] = trackedPromise;
+    this.cropQueue.push(request);
+    this.pumpCropQueue();
+    return trackedPromise;
+  },
+  pumpCropQueue() {
+    const maxDownloads = Math.max(1, Number(config.REVIEW_CROP_CONCURRENCY) || 1);
+    while (this.cropDownloadsInFlight < maxDownloads && this.cropQueue && this.cropQueue.length) {
+      const request = this.cropQueue.shift();
+      const group = this.data.pendingGroups[request.groupIndex];
+      const question = group && group.questions.find(item => item.id === request.questionId);
+      if (!question || request.generation !== this.cropGeneration
+        || request.groupsGeneration !== this.groupsGeneration || group.image_id !== request.imageId) {
+        request.resolve();
+        continue;
+      }
+      this.cropDownloadsInFlight += 1;
+      const inFlightKey = `${request.groupsGeneration}:${request.questionId}`;
+      this.cropInFlight[inFlightKey] = request.promise;
+      api.downloadQuestionImage(request.questionId, 'crop').then(cropImagePath => {
+        if (request.groupsGeneration === this.groupsGeneration) {
+          const currentGroup = this.data.pendingGroups[request.groupIndex];
+          if (currentGroup && currentGroup.image_id === request.imageId) {
+            this.updateQuestionInGroup(request.groupIndex, request.questionId, { cropImagePath, cropLoading: false });
+          }
+        }
+        request.resolve(cropImagePath);
+      }).catch(error => {
+        if (request.groupsGeneration === this.groupsGeneration) {
+          const currentGroup = this.data.pendingGroups[request.groupIndex];
+          if (currentGroup && currentGroup.image_id === request.imageId) {
+            this.updateQuestionInGroup(request.groupIndex, request.questionId, { cropLoading: false });
+          }
+        }
+        request.reject(error);
+      }).finally(() => {
+        if (this.cropInFlight[inFlightKey] === request.promise) delete this.cropInFlight[inFlightKey];
+        this.cropDownloadsInFlight -= 1;
+        this.pumpCropQueue();
+      });
+    }
   },
   previewCrop(e) {
     const cropImagePath = e.currentTarget.dataset.path;
@@ -116,18 +249,22 @@ Page({
     wx.previewImage({ current: cropImagePath, urls: [cropImagePath] });
   },
   updateQuestion(questionId, changes) {
-    const groups = this.data.groups.map((group, groupIndex) => groupIndex === this.data.activeIndex ? ({
+    this.updateQuestionInGroup(this.data.activeIndex, questionId, changes);
+  },
+  updateQuestionInGroup(groupIndex, questionId, changes) {
+    const pendingGroups = this.data.pendingGroups.map((group, index) => index === groupIndex ? ({
       ...group,
       questions: group.questions.map(question => question.id === questionId ? ({ ...question, ...changes }) : question),
     }) : group);
-    this.setData({ groups, currentGroup: groups[this.data.activeIndex] });
+    this.setData({ pendingGroups, ...(groupIndex === this.data.activeIndex && !this.data.currentGroupIsHistory
+      ? { currentGroup: pendingGroups[groupIndex] } : {}) });
   },
   setDecision(questionId, decision) {
-    const groups = this.data.groups.map((group, groupIndex) => groupIndex === this.data.activeIndex ? ({
+    const pendingGroups = this.data.pendingGroups.map((group, groupIndex) => groupIndex === this.data.activeIndex ? ({
       ...group,
       questions: group.questions.map(question => question.id === questionId ? ({ ...question, decision }) : question),
     }) : group);
-    this.setData({ groups, currentGroup: groups[this.data.activeIndex] });
+    this.setData({ pendingGroups, currentGroup: pendingGroups[this.data.activeIndex] });
   },
   onDecisionTap(e) {
     this.setDecision(e.currentTarget.dataset.id, e.currentTarget.dataset.decision);
@@ -162,11 +299,11 @@ Page({
     const group = this.data.currentGroup;
     if (!group) return;
     const decision = e.currentTarget.dataset.decision;
-    const groups = this.data.groups.map((item, index) => index === this.data.activeIndex ? ({
+    const pendingGroups = this.data.pendingGroups.map((item, index) => index === this.data.activeIndex ? ({
       ...item,
       questions: item.questions.map(question => ({ ...question, decision })),
     }) : item);
-    this.setData({ groups, currentGroup: groups[this.data.activeIndex] });
+    this.setData({ pendingGroups, currentGroup: pendingGroups[this.data.activeIndex] });
   },
   onReprocessTap() {
     const group = this.data.currentGroup;

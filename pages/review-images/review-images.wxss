@@ -1,6 +1,9 @@
 .review-page { padding: 12px; padding-bottom: 32px; }
 .state { padding: 48px 0; text-align: center; color: #999; }
 .group-scroll { white-space: nowrap; margin-bottom: 12px; }
+.section-title { display: block; margin: 4px 0 8px; color: #333; font-size: 14px; font-weight: 600; }
+.history-section { margin-bottom: 12px; border-radius: 8px; background: #f7f7f7; }
+.history-heading { display: flex; justify-content: space-between; padding: 12px; color: #666; font-size: 13px; }
 .group-tabs { display: inline-flex; }
 .group-tab { display: inline-flex; align-items: center; margin-right: 8px; padding: 5px 10px 5px 5px; border-radius: 16px; background: #f3f3f3; color: #666; font-size: 12px; }
 .group-tab.active { background: #fff1cf; color: #956c17; }
